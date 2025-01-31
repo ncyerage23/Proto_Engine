@@ -36,18 +36,22 @@ typedef struct {
 } sector_t;
 
 
-
+//Main controller for like everything in the game?
+//holds all the data
 static struct {
     SDL_Window *window;
     SDL_Renderer *renderer;
     int quit;
 
-    // static struct {
-    //     vector_t pos;
-    //     float zpos;
-    //     float angle;
-    //     int sector;
-    // } camera;
+    struct { struct sector arr[32]; size_t n; } sectors;
+    struct { struct wall arr[32]; size_t n; } walls;
+
+    struct {
+        vector_t pos;
+        float zpos;
+        float angle;
+        int sector;
+    } camera;
 
 } control;
 
