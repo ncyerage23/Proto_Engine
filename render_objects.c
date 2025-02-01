@@ -1,8 +1,6 @@
 //Objects for the game thingy
-//This is more for calculations,
-//where the windows one is for what happens
+//I should make a header file for this, probably. 
 
-#include <SDL2/SDL.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
