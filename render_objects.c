@@ -1,4 +1,6 @@
 //Objects for the game thingy
+//This is more for calculations,
+//where the windows one is for what happens
 
 #include <SDL2/SDL.h>
 #include <stdlib.h>
@@ -82,24 +84,7 @@ typedef struct {
 } sector_t;
 
 
-//Main controller for like everything in the game?
-//holds all the data
-static struct {
-    SDL_Window *window;
-    SDL_Renderer *renderer;
-    int quit;
 
-    struct { sector_t arr[32]; size_t n; } sectors;
-    struct { wall_t arr[32]; size_t n; } walls;
-
-    struct {
-        vector_t pos;
-        float zpos;
-        float angle;
-        int sector;
-    } camera;
-
-} control;
 
 
 

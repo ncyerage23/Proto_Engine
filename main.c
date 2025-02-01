@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "renderer.c"
+#include "windows.c"
 
 #define SCREEN_WIDTH    850
 #define SCREEN_HEIGHT   650
