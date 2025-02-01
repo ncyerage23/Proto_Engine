@@ -36,7 +36,23 @@ static struct {
 
 
 void render() {
+    double cs = cos((double)control.camera.angle);
+    double sn = sin((double)control.camera.angle);
+
     for (int i = 0; i < control.walls.n; i++) {
+        wall_t wall = control.walls.arr[i];
+        vect cam = control.camera.pos;
+        vect p1 = sub_vect(wall.p1, cam);
+        vect p2 = sub_vect(wall.p2, cam);
+
+        p1.x = p1.x * cs - p1.y * sn;
+        p2.x = p2.x * cs - p2.y * sn;
+        p1.y = p1.y * cs + p1.x * sn;
+        p2.y = p2.y * cs + p2.x * sn;
+
+        float p1_z = 0 - control.camera.zpos;
+
+        //need to continue from here!!!
 
     }
 }
