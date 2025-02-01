@@ -2,7 +2,8 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <SDL2/SDL.h>
+
+#include "renderer.c"
 
 #define SCREEN_WIDTH    850
 #define SCREEN_HEIGHT   650
@@ -10,51 +11,6 @@
 
 #define MOVE_SPEED      5.0
 #define ROT_SPEED       0.01
-
-
-typedef struct {
-    int r;
-    int g;
-    int b;
-    int a;
-} color_t; 
-
-typedef struct {
-    float x, y;
-} vector_t;
-
-typedef struct {
-    vector_t p1, p2;
-    int portal;
-    int sector;
-} wall_t;
-
-typedef struct {
-    int id;
-    int first_wall, num_walls;
-    float zfloor, zceil;
-} sector_t;
-
-
-//Main controller for like everything in the game?
-//holds all the data
-static struct {
-    SDL_Window *window;
-    SDL_Renderer *renderer;
-    int quit;
-
-    struct { struct sector arr[32]; size_t n; } sectors;
-    struct { struct wall arr[32]; size_t n; } walls;
-
-    struct {
-        vector_t pos;
-        float zpos;
-        float angle;
-        int sector;
-    } camera;
-
-} control;
-
 
 
 int init() {
