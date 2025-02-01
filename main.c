@@ -72,12 +72,43 @@ int init() {
 }
 
 
+//getting somewhere, I think. Quit copying tho, learn it yourself. it's all so weird tho lol. 
+static int read_file(const char* path) {
+    control.sectors.n = 1;
+
+    FILE* f = fopen(path, "r");
+    if (!f) { return 1; }
+
+    enum { SECT, WALL, CAM, NONE } mode = NONE;
+    char line[40];
+
+    while (fgets(line, sizeof(line), f)) {
+        const char *p = line;
+        while (isspace(p)) {
+            p++;
+        }
+
+        if (!*p || *p == '#') { continue; }
+    }
+
+    return 0;
+}
+
 
 int main() {
     if (init()) {
         printf("Init failed.");
         return 1;
     }
+
+    if (read_file("./map.txt")) {
+        printf("File read failure.");
+        return 1;
+    }
+
+    //hey! time for importing files
+    //and drawing points! well, lines
+    //gotta figure out the buffer and all that stuff, right?
 
 
     

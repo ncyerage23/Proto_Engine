@@ -57,6 +57,7 @@ static inline vector_t vector_intersect( vector_t v1, vector_t v2, vector_t v3, 
 //checks what side p is on from the directed vector (v1 -> v2)
 static inline int point_side( vector_t p, vector_t v1, vector_t v2 );
 
+//will delete l8r
 int test();
 
 
@@ -67,6 +68,8 @@ typedef struct {
     int portal;
 } wall_t;
 
+//what other wall functions do I need? Idek. 
+
 
 //sectors
 typedef struct {
@@ -75,6 +78,9 @@ typedef struct {
     float zfloor, zceil;
 } sector_t;
 
+
+    //add later, this is from sum else but will be super helpful
+//static bool point_in_sector(const struct sector *sector, vector_t p);
 
 
 
