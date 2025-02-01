@@ -26,13 +26,20 @@ static struct {
     struct { wall_t *arr; size_t n; } walls;
 
     struct {
-        vector_t pos;
+        vect pos;
         float zpos;
         float angle;
         int sector;
     } camera;
 
 } control;
+
+
+void render() {
+    for (int i = 0; i < control.walls.n; i++) {
+
+    }
+}
 
 
 int init() {
@@ -155,9 +162,7 @@ int main() {
         SDL_SetRenderDrawColor(control.renderer, 0, 0, 0, 255);
         SDL_RenderClear(control.renderer);
 
-        SDL_SetRenderDrawColor(control.renderer, 255, 0, 0, 255);
-        SDL_Rect rect = { 200, 150, 400, 300 };
-        SDL_RenderFillRect(control.renderer, &rect);
+        render();
 
 
         // Present the renderer (show the content on the window)
