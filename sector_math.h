@@ -1,15 +1,15 @@
-//Objects for the game thingy
-//I should make a header file for this, probably. 
+#ifndef SECTOR_MATH_H
+#define SECTOR_MATH_H
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
 
-
 //color rgb values and stuff
 typedef struct {
     int r, g, b, a;
 } color_t; 
+
 
 
 /* Vector stuff!
@@ -32,6 +32,7 @@ typedef struct {
     NV is a null vector, not a zero vector. By the way. 
 */
 
+#define vector(x, y)            ( (vector_t){ x, y } )
 #define NV                      ( (vector_t){ NAN, NAN } )
 #define add_vect(v1, v2)        ( (vector_t){ v1.x + v2.x, v1.y + v2.y } )
 #define sub_vect(v1, v2)        ( (vector_t){ v1.x - v2.x, v1.y - v2.y } )
@@ -43,31 +44,23 @@ typedef struct {
 #define proj_vect(v1, v2)       ( mult_vect( v2, ( dot_vect(v1, v2) / dot_vect(v2, v2) ) ) )
 #define invert_vect(v)          ( (vector_t){ v.x * -1, v.y * -1 } )
 
-inline vector_t rotate_vect(vector_t v, float a) {
-    return (vector_t){ (v.x * cos(a)) - (v.y * sin(a)), (v.x * sin(a) + v.y * cos(a)) };
-}
-
-inline vector_t vector_intersect( vector_t v1, vector_t v2, vector_t v3, vector_t v4 ) {
-    const float den = (v1.x - v2.x) * (v3.y - v4.y) - (v1.y - v2.y) * (v3.x - v4.x);
-    if (den <= 0.0) { return NV; } 
-
-    const float t = (v1.x - v3.x) * (v3.y - v4.y) - (v1.y - v3.y) * (v3.x - v4.x);
-    const float u = -1 * ( (v1.x - v2.x) * (v1.y - v3.y) - (v1.y - v2.y) * (v1.x - v3.x) );
-
-    if ( 0.0 <= t && t <= 1 && 0.0 <= u && u <= 1 ) {
-        return (vector_t){ v1.x + t * (v2.x - v1.x), v1.y + t * (v2.y - v1.y) };
-    } else {
-        return NV;
-    }
-}
-
 typedef struct {
     float x, y;
 } vector_t;
 
+//rotates a vector
+static inline vector_t rotate_vect(vector_t v, float a);
+
+//checks if two vectors intersect and returns that vector
+static inline vector_t vector_intersect( vector_t v1, vector_t v2, vector_t v3, vector_t v4 );
+
+//checks what side p is on from the directed vector (v1 -> v2)
+static inline int point_side( vector_t p, vector_t v1, vector_t v2 );
+
+int test();
 
 
-//wall functions
+//walls
 #define wall_intersect(w1, w2)      ( vector_intersect( w1.p1, w1.p2, w2.p1, w2.p2 ) )
 typedef struct {
     vector_t p1, p2;
@@ -75,9 +68,7 @@ typedef struct {
 } wall_t;
 
 
-
-
-
+//sectors
 typedef struct {
     int id;
     int first_wall, num_walls;
@@ -87,16 +78,4 @@ typedef struct {
 
 
 
-
-
-
-
-
-
-int main() {
-    vector_t v1 = { 5.0f, 10.0f };
-    vector_t v2 = { 15.0f, 20.0f };
-
-    printf("%.2f\n", cross_vect(v1, v2));
-
-}
+#endif
