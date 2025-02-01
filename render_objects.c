@@ -30,8 +30,11 @@ typedef struct {
 
     Also did the intersection.
     Before I continue imma have to test these. rip. 
+
+    NV is a null vector, not a zero vector. By the way. 
 */
 
+#define NV                      ( (vector_t){ NAN, NAN } )
 #define add_vect(v1, v2)        ( (vector_t){ v1.x + v2.x, v1.y + v2.y } )
 #define sub_vect(v1, v2)        ( (vector_t){ v1.x - v2.x, v1.y - v2.y } )
 #define mult_vect(v, c)         ( (vector_t){ v.x * c, v.y * c } )
@@ -48,7 +51,7 @@ inline vector_t rotate_vect(vector_t v, float a) {
 
 inline vector_t vector_intersect( vector_t v1, vector_t v2, vector_t v3, vector_t v4 ) {
     const float den = (v1.x - v2.x) * (v3.y - v4.y) - (v1.y - v2.y) * (v3.x - v4.x);
-    if (den <= 0.0) { return (vector_t){NAN, NAN}; } 
+    if (den <= 0.0) { return NV; } 
 
     const float t = (v1.x - v3.x) * (v3.y - v4.y) - (v1.y - v3.y) * (v3.x - v4.x);
     const float u = -1 * ( (v1.x - v2.x) * (v1.y - v3.y) - (v1.y - v2.y) * (v1.x - v3.x) );
@@ -56,7 +59,7 @@ inline vector_t vector_intersect( vector_t v1, vector_t v2, vector_t v3, vector_
     if ( 0.0 <= t && t <= 1 && 0.0 <= u && u <= 1 ) {
         return (vector_t){ v1.x + t * (v2.x - v1.x), v1.y + t * (v2.y - v1.y) };
     } else {
-        return (vector_t){NAN, NAN};
+        return NV;
     }
 }
 

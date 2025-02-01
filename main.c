@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "windows.c"
+#include "render_objects.c"
 
 #define SCREEN_WIDTH    850
 #define SCREEN_HEIGHT   650
@@ -11,6 +11,29 @@
 
 #define MOVE_SPEED      5.0
 #define ROT_SPEED       0.01
+
+
+
+//Main controller for like everything in the game
+//holds all the data and stuff. Also calls the functions
+static struct {
+    SDL_Window *window;
+    SDL_Renderer *renderer;
+    int quit;
+
+    struct { sector_t arr[32]; size_t n; } sectors;
+    struct { wall_t arr[32]; size_t n; } walls;
+
+    struct {
+        vector_t pos;
+        float zpos;
+        float angle;
+        int sector;
+    } camera;
+
+} control;
+
+
 
 
 int init() {
