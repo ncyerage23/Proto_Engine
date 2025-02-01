@@ -74,42 +74,39 @@ int init() {
 
 
 int main() {
-    // if (init()) {
-    //     printf("Init failed.");
-    //     return 1;
-    // }
-
-
-    test();
+    if (init()) {
+        printf("Init failed.");
+        return 1;
+    }
 
 
     
-    // SDL_Event e;
-    // while (!control.quit) {
+    SDL_Event e;
+    while (!control.quit) {
 
-    //     while (SDL_PollEvent(&e) != 0) {
-    //         if (e.type == SDL_QUIT) {
-    //             control.quit = 1;
-    //         }
-    //     }
+        while (SDL_PollEvent(&e) != 0) {
+            if (e.type == SDL_QUIT) {
+                control.quit = 1;
+            }
+        }
 
-    //     // Paints the screen black
-    //     SDL_SetRenderDrawColor(control.renderer, 0, 0, 0, 255);
-    //     SDL_RenderClear(control.renderer);
+        // Paints the screen black
+        SDL_SetRenderDrawColor(control.renderer, 0, 0, 0, 255);
+        SDL_RenderClear(control.renderer);
 
-    //     SDL_SetRenderDrawColor(control.renderer, 255, 0, 0, 255);
-    //     SDL_Rect rect = { 200, 150, 400, 300 };
-    //     SDL_RenderFillRect(control.renderer, &rect);
+        SDL_SetRenderDrawColor(control.renderer, 255, 0, 0, 255);
+        SDL_Rect rect = { 200, 150, 400, 300 };
+        SDL_RenderFillRect(control.renderer, &rect);
 
 
-    //     // Present the renderer (show the content on the window)
-    //     SDL_RenderPresent(control.renderer);
-    // }
+        // Present the renderer (show the content on the window)
+        SDL_RenderPresent(control.renderer);
+    }
 
-    // SDL_DestroyRenderer(control.renderer);
-    // SDL_DestroyWindow(control.window);
-    // SDL_Quit();
-    // return 0;
+    SDL_DestroyRenderer(control.renderer);
+    SDL_DestroyWindow(control.window);
+    SDL_Quit();
+    return 0;
 }
 
 

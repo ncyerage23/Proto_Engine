@@ -37,7 +37,7 @@ int test() {
     vector_t v1 = {5.0, 10.0};
     vector_t v2 = {10.0, 5.0};
 
-    vector_t p = {5.0, 6.0};
+    vector_t p = {12.0, 8.0};
 
     int out = point_side(p, v1, v2);
     printf("and its...%d\n", out);
