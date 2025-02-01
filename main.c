@@ -22,8 +22,8 @@ static struct {
     SDL_Renderer *renderer;
     int quit;
 
-    struct { sector_t arr[32]; size_t n; } sectors;
-    struct { wall_t arr[32]; size_t n; } walls;
+    struct { sector_t *arr; size_t n; } sectors;
+    struct { wall_t *arr; size_t n; } walls;
 
     struct {
         vector_t pos;
@@ -35,8 +35,6 @@ static struct {
 } control;
 
 
-
-
 int init() {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
@@ -44,7 +42,7 @@ int init() {
     }
 
     control.window = SDL_CreateWindow(
-        "No idea!", 
+        "Proto Engine!", 
         SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
         SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN
     );
@@ -63,12 +61,18 @@ int init() {
         return 1;
     }
 
+    control.sectors.n = 0;
+    control.walls.n = 0;
     control.quit = 0;
-
-
-
-
     return 0;
+}
+
+void close() {
+    if (control.sectors.arr)    free(control.sectors.arr);
+    if (control.walls.arr)      free(control.walls.arr);
+    if (control.renderer)       SDL_DestroyRenderer(control.renderer);
+    if (control.window)         SDL_DestroyWindow(control.window);
+    SDL_Quit();
 }
 
 
@@ -77,20 +81,50 @@ static int read_file(const char* path) {
     control.sectors.n = 1;
 
     FILE* f = fopen(path, "r");
-    if (!f) { return 1; }
+    if (!f) { close(); return 1; }
 
-    enum { SECT, WALL, CAM, NONE } mode = NONE;
+    int sect_count, wall_count;
+
     char line[40];
-
     while (fgets(line, sizeof(line), f)) {
-        const char *p = line;
-        while (isspace(p)) {
-            p++;
+        if (line[0] == '#' || line[0] == '\n') continue; 
+
+        if (sscanf(line, "SECT %d", &sect_count) == 1) {
+            control.sectors.arr = (sector_t*)malloc( sizeof(sector_t) * sect_count );
+            if (!control.sectors.arr) { fclose(f); close(); return 1; }
+
+            for (int i = 0; i < sect_count; i++) {
+                if (!fgets(line, sizeof(line), f)) break;
+                //(id, start_wall, num_walls, zfloor, zceil)
+                sector_t* sect = &control.sectors.arr[i];
+                control.sectors.n++;
+                sscanf(line, "%d %d %d %f %f", &sect->id, &sect->first_wall, &sect->num_walls, &sect->zfloor, &sect->zceil);
+            }
+            control.sectors.n = sect_count;
         }
 
-        if (!*p || *p == '#') { continue; }
+        if (sscanf(line, "WALL %d", &wall_count) == 1) {
+            control.walls.arr = (wall_t*)malloc( sizeof(wall_t) * wall_count );
+            if (!control.walls.arr) { fclose(f); close(); return 1; }
+
+            for (int j = 0; j < wall_count; j++) {
+                if (!fgets(line, sizeof(line), f)) break;
+                //(id, p1x, p1y, p2x, p2y, portal)
+                wall_t* wall = &control.walls.arr[j];
+                sscanf(line, "%f %f %f %f %d", &wall->p1.x, &wall->p1.y, &wall->p2.x, &wall->p2.y, &wall->portal);
+            }
+            control.walls.n = wall_count;
+        }
+
+        if (strncmp(line, "CAM", 3) == 0) {
+            if (!fgets(line, sizeof(line), f)) break;
+            //(px, py, zpos, angle, sector)
+            sscanf(line, "%f %f %f %d", &control.camera.pos.x, &control.camera.pos.y, &control.camera.zpos, &control.camera.sector);
+        }
+
     }
 
+    fclose(f);
     return 0;
 }
 
@@ -103,13 +137,9 @@ int main() {
 
     if (read_file("./map.txt")) {
         printf("File read failure.");
+        close();
         return 1;
     }
-
-    //hey! time for importing files
-    //and drawing points! well, lines
-    //gotta figure out the buffer and all that stuff, right?
-
 
     
     SDL_Event e;
@@ -134,9 +164,7 @@ int main() {
         SDL_RenderPresent(control.renderer);
     }
 
-    SDL_DestroyRenderer(control.renderer);
-    SDL_DestroyWindow(control.window);
-    SDL_Quit();
+    close();
     return 0;
 }
 
