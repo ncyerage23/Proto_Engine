@@ -1,18 +1,21 @@
 //Starting file for Proto Engine
 
+//compile command btw: gcc main.c sector_math.c -o poop -lSDL2
+//gotta get to doing a makefile at some point
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <SDL2/SDL.h>
 
 #include "sector_math.h"
 
-#define SCREEN_WIDTH    850
-#define SCREEN_HEIGHT   650
+#define SCREEN_WIDTH    800
+#define SCREEN_HEIGHT   600
 #define FOV_SCALE       SCREEN_WIDTH / 2
 
 #define MOVE_SPEED      5.0
 #define ROT_SPEED       0.01
-
+#define pcam            control.camera
 
 
 //Main controller for like everything in the game
@@ -35,24 +38,47 @@ static struct {
 } control;
 
 
+//may also be wrong
+void handle_keys(const Uint8 *keystate) {
+    float dx = sin(pcam.angle) * 5.0, dy = cos(pcam.angle) * 5.0;
+
+    if (keystate[SDL_SCANCODE_W]) { pcam.pos.x += dx; pcam.pos.y += dy; }
+    if (keystate[SDL_SCANCODE_S]) { pcam.pos.x -= dx; pcam.pos.y -= dy; }
+    if (keystate[SDL_SCANCODE_A]) { pcam.pos.x -= dy; pcam.pos.y += dx; }
+    if (keystate[SDL_SCANCODE_D]) { pcam.pos.x += dy; pcam.pos.y -= dx; }
+
+    if (keystate[SDL_SCANCODE_LEFT]) { pcam.angle -= 0.05; }
+    if (keystate[SDL_SCANCODE_RIGHT]) { pcam.angle += 0.05; }
+
+}
+
+//sum is very wrong here and idk what
+//yeah who mfin knows
 void render() {
     double cs = cos((double)control.camera.angle);
     double sn = sin((double)control.camera.angle);
 
     for (int i = 0; i < control.walls.n; i++) {
-        wall_t wall = control.walls.arr[i];
-        vect cam = control.camera.pos;
-        vect p1 = sub_vect(wall.p1, cam);
-        vect p2 = sub_vect(wall.p2, cam);
+        vect p1 = control.walls.arr[i].p1;
+        vect p2 = control.walls.arr[i].p2;
 
-        p1.x = p1.x * cs - p1.y * sn;
-        p2.x = p2.x * cs - p2.y * sn;
-        p1.y = p1.y * cs + p1.x * sn;
-        p2.y = p2.y * cs + p2.x * sn;
+        float x1 = p1.x - pcam.pos.x, y1 = p1.y - pcam.pos.y;
+        float x2 = p2.x - pcam.pos.x, y2 = p2.y - pcam.pos.y;
 
-        float p1_z = 0 - control.camera.zpos;
+        float wx1 = x1 * cs - y1 * sn, wy1 = y1 * cs + x1 * sn;
+        float wx2 = x2 * cs - y2 * sn, wy2 = y2 * cs + x2 * sn;
+        float wz1 = 40.0 - pcam.zpos, wz2 = 40.0 - pcam.zpos;
 
-        //need to continue from here!!!
+        if (wy1 <= 0 || wy2 <= 0) {
+            continue;
+        }
+
+        float temp_wy1 = wy1, temp_wy2 = wy2;
+        wx1 = wx1 * FOV_SCALE / wy1 + (SCREEN_WIDTH/2); wy1 = wz1 * FOV_SCALE / temp_wy1 + (SCREEN_HEIGHT/2);
+        wx2 = wx2 * FOV_SCALE / wy2 + (SCREEN_WIDTH/2); wy2 = wz2 * FOV_SCALE / temp_wy2 + (SCREEN_HEIGHT/2);
+
+        SDL_SetRenderDrawColor(control.renderer, 255, 0, 0, 255);
+        SDL_RenderDrawLine(control.renderer, (int)wx1, (int)wy1, (int)wx2, (int)wy2);
 
     }
 }
@@ -173,6 +199,11 @@ int main() {
                 control.quit = 1;
             }
         }
+
+        const Uint8 *keystate = SDL_GetKeyboardState(NULL);
+        float dx = 0;
+
+        handle_keys(keystate);
 
         // Paints the screen black
         SDL_SetRenderDrawColor(control.renderer, 0, 0, 0, 255);

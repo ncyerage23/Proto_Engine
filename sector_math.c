@@ -28,9 +28,9 @@ static inline vect vector_intersect( vect v1, vect v2, vect v3, vect v4 ) {
 //less, to the right
 //equal, it's on the line
 //maybe just return the value, no ifs. Yeah. 
-static inline float point_side( vect p, vect v1, vect v2 ) {
+static inline int point_side( vect p, vect v1, vect v2 ) {
     float out = cross_vect( sub_vect(v2, v1), sub_vect(p, v1) );
-    return out;
+    return (int)out;
 }
 
 
