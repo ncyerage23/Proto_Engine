@@ -1,7 +1,7 @@
 # (id, start_wall, num_walls, zfloor, zceil)
 SECT 2 
 0 0 8 0.0 60.0
-1 8 6 0.0 60.0
+1 8 6 10.0 70.0
 
 # (id, p1x, p1y, p2x, p2y, portal)
 WALL 14

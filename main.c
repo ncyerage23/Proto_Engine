@@ -3,6 +3,34 @@
 //compile command btw: gcc main.c sector_math.c -o poop -lSDL2
 //gotta get to doing a makefile at some point
 
+/*The plan:
+    understand the current code and streamline it
+    Figure out switching sectors
+    Draw vertically for each bit of the line (like the real thing) instead of wireframes (add color to each sector)
+    Figure out the drawing buffer so we don't overdraw things (not the comp sci word (unless it is), just drawing over itself)
+    Eventually, level editor and wall textures. And collision detection on walls and stuff.
+
+    Then, when all of the basics are done, I just need to clean everything up and ensure that it's easy to use and well structured. 
+    Make it modular, and feel relatively easy to approach. It doesn't have to be crazy well made, but it'd be nice. 
+
+    From there, it's all gameplay. Copy the code to the dungeon crawler project. Implement enemy sprites and basic combat, 
+    map out how the dungeons will work and build the rooms. Eventually build the dungeon generator, which will be annoying, but whatever. 
+    But, yeah. Just run with it, and make a simple but fun dungeon crawler game. 
+
+    One of the fun things will be writing the script for the dungeon generator, since I want it to essentially be infinite. All the 
+    weapons and enemies need to scale as you go and stuff. It should be really fun, but, yeah I gotta figure that out. 
+
+    One thing I haven't approached yet is sprite animation. I think I can figure it out, but it may be smart to build a data structure
+    around the frames of animation. I like that idea. 
+
+    Should I try python or lua embedding for the ai enemy scripting? Perhaps. Honestly, that might be the move, but we'll see when I get there. 
+    It'd just be a little easier to do, to be honest. 
+
+    I also gotta implement timers and that sort of stuff. Making the lua/python libraries for all of this is gonna be weird. But it will be super
+    helpful. I mean like, this is exactly what I plan to do later, so yeah. 
+*/
+
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <SDL2/SDL.h>
@@ -54,13 +82,13 @@ void handle_keys(const Uint8 *keystate) {
 
 
 //This currently works quite well, which is amazing. 
-//From here, understand what its doing (clipping and z stuff)
-//then, rewrite it with that info, and condense it a lil. also make the arg a sector not an int? 
 void render_sector(int sect_id) {
     if (sect_id < 0 || sect_id >= control.sectors.n) {
         return;
         //also check if it was already rendered, or is too far? idk yet
     }
+
+    SDL_SetRenderDrawColor(control.renderer, 255, 0, 0, 255);
 
     int i = control.sectors.arr[sect_id].first_wall;
     int max_wall = i + control.sectors.arr[sect_id].num_walls;
@@ -94,23 +122,45 @@ void render_sector(int sect_id) {
         float wy2_top = wz2_ceil * FOV_SCALE / temp_wy2 + (SCREEN_HEIGHT / 2);
 
         if (control.walls.arr[i].portal != -1) {
+            int delta_zfloor = control.sectors.arr[sect_id].zfloor - control.sectors.arr[control.walls.arr[i].portal].zfloor;
+            int delta_zceil = control.sectors.arr[sect_id].zceil - control.sectors.arr[control.walls.arr[i].portal].zceil;
+
+            float wall_len = 60.0;
+            float rel_wall_len = vect_len( sub_vect( ((vect){wx1, wy1}), ((vect){wx1, wy1_top}) ));
+            float m = delta_zfloor / wall_len;
+            m *= rel_wall_len;
+            float n = delta_zceil / wall_len;
+            n *= rel_wall_len;
+
+            if (delta_zfloor < 0) {
+                SDL_RenderDrawLine(control.renderer, (int)wx1, (int)wy1, (int)wx2, (int)wy2);
+                SDL_RenderDrawLine(control.renderer, (int)wx1, (int)wy1 + m, (int)wx2, (int)wy2 + m);
+            } 
+            
+            if (delta_zceil < 0) {
+                SDL_RenderDrawLine(control.renderer, (int)wx1, (int)wy1_top + n, (int)wx2, (int)wy2_top + n);
+                SDL_RenderDrawLine(control.renderer, (int)wx1, (int)wy1_top, (int)wx2, (int)wy2_top);
+            }
+            
+
             render_sector(control.walls.arr[i].portal);
+            
         } else {
-            SDL_SetRenderDrawColor(control.renderer, 255, 0, 0, 255);
             SDL_RenderDrawLine(control.renderer, (int)wx1, (int)wy1, (int)wx2, (int)wy2);
             SDL_RenderDrawLine(control.renderer, (int)wx1, (int)wy1_top, (int)wx2, (int)wy2_top);
-            //SDL_RenderDrawLine(control.renderer, (int)wx1, (int)wy1_top, (int)wx1, (int)wy2);
+
+            SDL_RenderDrawLine(control.renderer, (int)wx1, (int)wy1, (int)wx1, (int)wy1_top);
+            SDL_RenderDrawLine(control.renderer, (int)wx2, (int)wy2, (int)wx2, (int)wy2_top);
         }
         
 
     }
 }
 
-//sum is very wrong here and idk what
-//yeah who mfin knows
+
+//idk what else I need here, maybe just use the above one here? idk yet. 
 void render() {
     render_sector(control.camera.sector);
-
 }
 
 
