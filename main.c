@@ -78,7 +78,7 @@ static struct {
 } control;
 
 
-
+ 
 //may also be wrong
 void handle_keys(const Uint8 *keystate) {
     float dx = sin(pcam.angle) * 5.0, dy = cos(pcam.angle) * 5.0;
