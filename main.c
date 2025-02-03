@@ -53,11 +53,9 @@ void handle_keys(const Uint8 *keystate) {
 }
 
 
-//so, it goes through the walls in the sector
-//and draws each wall (as long as its in the fov)
-//then, it checks if its a portal (maybe do this first??)
-//if it is, we call render_sector on that sector? 
-//kinda actually works??? Pretty cool.
+//This currently works quite well, which is amazing. 
+//From here, understand what its doing (clipping and z stuff)
+//then, rewrite it with that info, and condense it a lil. also make the arg a sector not an int? 
 void render_sector(int sect_id) {
     if (sect_id < 0 || sect_id >= control.sectors.n) {
         return;
@@ -66,7 +64,8 @@ void render_sector(int sect_id) {
 
     int i = control.sectors.arr[sect_id].first_wall;
     int max_wall = i + control.sectors.arr[sect_id].num_walls;
-    int sect_z = control.sectors.arr[sect_id].zfloor;
+    int sect_z_floor = control.sectors.arr[sect_id].zfloor;
+    int sect_z_ceil = control.sectors.arr[sect_id].zceil;
 
     double cs = cos((double)control.camera.angle);
     double sn = sin((double)control.camera.angle);
@@ -80,22 +79,29 @@ void render_sector(int sect_id) {
 
         float wx1 = x1 * cs - y1 * sn, wy1 = y1 * cs + x1 * sn;
         float wx2 = x2 * cs - y2 * sn, wy2 = y2 * cs + x2 * sn;
-        float wz1 = pcam.zpos - sect_z, wz2 = pcam.zpos - sect_z;
+        float wz1_floor = pcam.zpos - sect_z_floor, wz2_floor = pcam.zpos - sect_z_floor;
+        float wz1_ceil = pcam.zpos - sect_z_ceil, wz2_ceil = pcam.zpos - sect_z_ceil;
 
         if (wy1 <= 0 || wy2 <= 0) {
             continue;
         }
 
         float temp_wy1 = wy1, temp_wy2 = wy2;
-        wx1 = wx1 * FOV_SCALE / wy1 + (SCREEN_WIDTH/2); wy1 = wz1 * FOV_SCALE / temp_wy1 + (SCREEN_HEIGHT/2);
-        wx2 = wx2 * FOV_SCALE / wy2 + (SCREEN_WIDTH/2); wy2 = wz2 * FOV_SCALE / temp_wy2 + (SCREEN_HEIGHT/2);
+        wx1 = wx1 * FOV_SCALE / wy1 + (SCREEN_WIDTH/2); wy1 = wz1_floor * FOV_SCALE / temp_wy1 + (SCREEN_HEIGHT/2);
+        wx2 = wx2 * FOV_SCALE / wy2 + (SCREEN_WIDTH/2); wy2 = wz2_floor * FOV_SCALE / temp_wy2 + (SCREEN_HEIGHT/2);
 
-        SDL_SetRenderDrawColor(control.renderer, 255, 0, 0, 255);
-        SDL_RenderDrawLine(control.renderer, (int)wx1, (int)wy1, (int)wx2, (int)wy2);
+        float wy1_top = wz1_ceil * FOV_SCALE / temp_wy1 + (SCREEN_HEIGHT / 2);
+        float wy2_top = wz2_ceil * FOV_SCALE / temp_wy2 + (SCREEN_HEIGHT / 2);
 
         if (control.walls.arr[i].portal != -1) {
             render_sector(control.walls.arr[i].portal);
+        } else {
+            SDL_SetRenderDrawColor(control.renderer, 255, 0, 0, 255);
+            SDL_RenderDrawLine(control.renderer, (int)wx1, (int)wy1, (int)wx2, (int)wy2);
+            SDL_RenderDrawLine(control.renderer, (int)wx1, (int)wy1_top, (int)wx2, (int)wy2_top);
+            //SDL_RenderDrawLine(control.renderer, (int)wx1, (int)wy1_top, (int)wx1, (int)wy2);
         }
+        
 
     }
 }
