@@ -30,17 +30,41 @@ static inline vect vector_intersect( vect v1, vect v2, vect v3, vect v4 ) {
 //maybe just return the value, no ifs. Yeah. 
 static inline int point_side( vect p, vect v1, vect v2 ) {
     float out = cross_vect( sub_vect(v2, v1), sub_vect(p, v1) );
-    return (int)out;
+    return (out > 0) - (out < 0);
 }
 
 
-int test() {
-    vect v1 = {5.0, 10.0};
-    vect v2 = {10.0, 5.0};
+//wall stuff?
 
-    vect p = {12.0, 8.0};
 
-    int out = point_side(p, v1, v2);
-    printf("and its...%d\n", out);
+//sector stuff
+
+//I can't get the walls tho!
+static inline vect sect_center(sector_t* sect, wall_t* walls) {
+    vect center = {0.0, 0.0};
+    int total_points = 0;
+
+    for (int i = sect->first_wall; i < sect->first_wall + sect->num_walls; i++) {
+        center.x += walls[i].p1.x + walls[i].p2.x;
+        center.y += walls[i].p1.y + walls[i].p2.y;
+        total_points += 2;
+    }
+
+    if (total_points > 0) {
+        center.x /= total_points;
+        center.y /= total_points;
+    }
+
+    return center;
+}
+
+int in_sector(vect p, sector_t* sect, wall_t* walls) {
+    for (size_t i = sect->first_wall; i < sect->first_wall + sect->num_walls; i++) {
+        const wall_t wall = walls[i];
+
+        if (point_side(p, wall.p1, wall.p2) > 0) {
+            return 0;
+        }
+    }
     return 1;
 }

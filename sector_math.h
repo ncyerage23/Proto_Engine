@@ -6,6 +6,12 @@
 #include <math.h>
 
 //color rgb values and stuff
+#define WHITE   ( (color_t){255, 255, 255, 255} )
+#define BLACK   ( (color_t){0, 0, 0, 255} )
+#define RED     ( (color_t){255, 0, 0, 255} )
+#define GREEN   ( (color_t){0, 255, 0, 255} )
+#define BLUE    ( (color_t){0, 0, 255, 255} )
+
 typedef struct {
     int r, g, b, a;
 } color_t; 
@@ -78,9 +84,9 @@ typedef struct {
     float zfloor, zceil;
 } sector_t;
 
+static inline vect sect_center(sector_t* sect, wall_t* walls);
 
-    //add later, this is from sum else but will be super helpful
-//static bool point_in_sector(const struct sector *sector, vect p);
+int in_sector(vect p, sector_t* sect, wall_t* walls);
 
 
 
