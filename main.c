@@ -52,13 +52,26 @@ void handle_keys(const Uint8 *keystate) {
 
 }
 
-//sum is very wrong here and idk what
-//yeah who mfin knows
-void render() {
+
+//so, it goes through the walls in the sector
+//and draws each wall (as long as its in the fov)
+//then, it checks if its a portal (maybe do this first??)
+//if it is, we call render_sector on that sector? 
+//kinda actually works??? Pretty cool.
+void render_sector(int sect_id) {
+    if (sect_id < 0 || sect_id >= control.sectors.n) {
+        return;
+        //also check if it was already rendered, or is too far? idk yet
+    }
+
+    int i = control.sectors.arr[sect_id].first_wall;
+    int max_wall = i + control.sectors.arr[sect_id].num_walls;
+    int sect_z = control.sectors.arr[sect_id].zfloor;
+
     double cs = cos((double)control.camera.angle);
     double sn = sin((double)control.camera.angle);
 
-    for (int i = 0; i < control.walls.n; i++) {
+    for (i = control.sectors.arr[sect_id].first_wall; i < max_wall; i++) {
         vect p1 = control.walls.arr[i].p1;
         vect p2 = control.walls.arr[i].p2;
 
@@ -67,7 +80,7 @@ void render() {
 
         float wx1 = x1 * cs - y1 * sn, wy1 = y1 * cs + x1 * sn;
         float wx2 = x2 * cs - y2 * sn, wy2 = y2 * cs + x2 * sn;
-        float wz1 = 40.0 - pcam.zpos, wz2 = 40.0 - pcam.zpos;
+        float wz1 = pcam.zpos - sect_z, wz2 = pcam.zpos - sect_z;
 
         if (wy1 <= 0 || wy2 <= 0) {
             continue;
@@ -80,7 +93,18 @@ void render() {
         SDL_SetRenderDrawColor(control.renderer, 255, 0, 0, 255);
         SDL_RenderDrawLine(control.renderer, (int)wx1, (int)wy1, (int)wx2, (int)wy2);
 
+        if (control.walls.arr[i].portal != -1) {
+            render_sector(control.walls.arr[i].portal);
+        }
+
     }
+}
+
+//sum is very wrong here and idk what
+//yeah who mfin knows
+void render() {
+    render_sector(control.camera.sector);
+
 }
 
 
