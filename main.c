@@ -46,6 +46,10 @@
 #include <stdio.h>
 #include <SDL2/SDL.h>
 
+//do this later, when I sort of restart. There's a lot of changes to be made, so yeah. 
+//I can use this to help with all the speed. I can use it as a buffer for pixels
+//#include <GL/glew.h>
+
 #include "sector_math.h"
 
 #define SCREEN_WIDTH    1200
