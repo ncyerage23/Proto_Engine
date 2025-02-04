@@ -48,14 +48,15 @@
 
 #include "sector_math.h"
 
-#define SCREEN_WIDTH    800
-#define SCREEN_HEIGHT   600
+#define SCREEN_WIDTH    1200
+#define SCREEN_HEIGHT   700
 #define FOV_SCALE       SCREEN_WIDTH / 2
 
 #define MOVE_SPEED          5.0
 #define ROT_SPEED           0.01
 #define pcam                control.camera
 #define set_color(id)       ( SDL_SetRenderDrawColor(control.renderer, (id) ? 255 : 0, 0, (id) ? 0 : 255, 255) )
+#define SET_TRIG            pcam.cos = cos(pcam.angle); pcam.sin = sin(pcam.angle);
 
 
 //Main controller for like everything in the game
@@ -68,42 +69,53 @@ static struct {
     struct { sector_t *arr; size_t n; int *rendered; } sectors;
     struct { wall_t *arr; size_t n; } walls;
 
+    int y_lo[SCREEN_WIDTH], y_hi[SCREEN_WIDTH];
+
     struct {
         vect pos;
         float zpos;
         float angle;
         int sector;
+        double cos;
+        double sin;
     } camera;
 
 } control;
 
 
- 
-//may also be wrong
 void handle_keys(const Uint8 *keystate) {
     float dx = sin(pcam.angle) * 2.5, dy = cos(pcam.angle) * 2.5;
 
-    if (keystate[SDL_SCANCODE_W]) { pcam.pos.x += dx; pcam.pos.y += dy; }
-    if (keystate[SDL_SCANCODE_S]) { pcam.pos.x -= dx; pcam.pos.y -= dy; }
-    if (keystate[SDL_SCANCODE_A]) { pcam.pos.x -= dy; pcam.pos.y += dx; }
-    if (keystate[SDL_SCANCODE_D]) { pcam.pos.x += dy; pcam.pos.y -= dx; }
+    float posx = pcam.pos.x, posy = pcam.pos.y;
 
-    if (keystate[SDL_SCANCODE_LEFT]) pcam.angle -= 0.03;
-    if (keystate[SDL_SCANCODE_RIGHT]) pcam.angle += 0.03; 
+    if (keystate[SDL_SCANCODE_W]) { posx += dx; posy += dy; }
+    if (keystate[SDL_SCANCODE_S]) { posx -= dx; posy -= dy; }
+    if (keystate[SDL_SCANCODE_A]) { posx -= dy; posy += dx; }
+    if (keystate[SDL_SCANCODE_D]) { posx += dy; posy -= dx; }
+
+    if (keystate[SDL_SCANCODE_LEFT]) { pcam.angle -= 0.03; SET_TRIG; }
+    if (keystate[SDL_SCANCODE_RIGHT]) { pcam.angle += 0.03; SET_TRIG; }
 
     if (keystate[SDL_SCANCODE_SPACE]) pcam.zpos += 1.0;
     if (keystate[SDL_SCANCODE_LSHIFT] || keystate[SDL_SCANCODE_RSHIFT] ) pcam.zpos -= 1.0;
 
 
-    for (int i = 0; i < control.sectors.n; i++) {
-        if (i != pcam.sector && in_sector(pcam.pos, &control.sectors.arr[i], control.walls.arr) == 1) {
-            pcam.sector = i;
-            pcam.zpos = control.sectors.arr[i].zfloor + 20.0;
+    //checks outer wall collision and stuff (pretty slow)
+    if ( (posx != pcam.pos.x && posy != pcam.pos.y) ) {
+        int new_sect = -1;
+        for (int i = 0; i < control.sectors.n; i++) {
+            if (in_sector(((vect){posx, posy}), &control.sectors.arr[i], control.walls.arr)) {
+                new_sect = i;
+            }
+        }
+
+        if (new_sect != -1) {
+            pcam.pos = (vect){posx, posy};
+            pcam.sector = new_sect;
+            pcam.zpos = control.sectors.arr[new_sect].zfloor + 20.0;
         }
     }
-
 }
-
 
 
 void render_sector(int sect_id) {
@@ -163,59 +175,37 @@ void render_sector(int sect_id) {
     }
 }
 
-//chatgpt's attempt at drawing the full walls, lol. It kinda sorta works? 
+
+//revised render_sector, actually figure it out tho? 
 void render_sector2(int sect_id) {
-    if (sect_id < 0 || sect_id >= control.sectors.n) {
+    if (sect_id < 0 || sect_id >= control.sectors.n || control.sectors.rendered[sect_id] == 1) {
         return;
-    }
+    } 
 
     set_color(sect_id);
+    control.sectors.rendered[sect_id] = 1;
+    float zfloor = control.sectors.arr->zfloor, zceil = control.sectors.arr->zceil;
 
-    int i = control.sectors.arr[sect_id].first_wall;
-    int max_wall = i + control.sectors.arr[sect_id].num_walls;
-    int sect_z_floor = control.sectors.arr[sect_id].zfloor;
-    int sect_z_ceil = control.sectors.arr[sect_id].zceil;
+    //gonna need to make this an array later
+    int next_sector = -1;
 
-    double cs = cos((double)control.camera.angle);
-    double sn = sin((double)control.camera.angle);
+    vect p1, p2, w1, w2;
+    for (int i = 0; i < control.sectors.arr[sect_id].num_walls; i++) {
+        p1 = sub_vect(p1, pcam.pos);
+        p2 = sub_vect(p2, pcam.pos);
 
-    for (i = control.sectors.arr[sect_id].first_wall; i < max_wall; i++) {
-        vect p1 = control.walls.arr[i].p1;
-        vect p2 = control.walls.arr[i].p2;
+        w1.x = p1.x * pcam.cos - p1.y * pcam.sin; w1.y = p1.y * pcam.cos + p1.x * pcam.sin;
+        w2.x = p2.x * pcam.cos - p2.y * pcam.sin; w2.y = p2.y * pcam.cos + p2.x * pcam.sin;
 
-        float x1 = p1.x - pcam.pos.x, y1 = p1.y - pcam.pos.y;
-        float x2 = p2.x - pcam.pos.x, y2 = p2.y - pcam.pos.y;
+        float wz1_floor = pcam.zpos - zfloor, wz2_floor = pcam.zpos - zfloor;
+        float wz1_ceil = pcam.zpos - zceil, wz2_ceil = pcam.zpos - zceil;
 
-        float wx1 = x1 * cs - y1 * sn, wy1 = y1 * cs + x1 * sn;
-        float wx2 = x2 * cs - y2 * sn, wy2 = y2 * cs + x2 * sn;
-        float wz1_floor = pcam.zpos - sect_z_floor, wz2_floor = pcam.zpos - sect_z_floor;
-        float wz1_ceil = pcam.zpos - sect_z_ceil, wz2_ceil = pcam.zpos - sect_z_ceil;
-
-        if (wy1 <= 0 || wy2 <= 0) {
+        //this may be the clipping thing
+        if (w1.y <= 0 || w2.y <= 0) {
             continue;
         }
-
-        float temp_wy1 = wy1, temp_wy2 = wy2;
-        wx1 = wx1 * FOV_SCALE / wy1 + (SCREEN_WIDTH / 2);
-        wy1 = wz1_floor * FOV_SCALE / temp_wy1 + (SCREEN_HEIGHT / 2);
-        wx2 = wx2 * FOV_SCALE / wy2 + (SCREEN_WIDTH / 2);
-        wy2 = wz2_floor * FOV_SCALE / temp_wy2 + (SCREEN_HEIGHT / 2);
-
-        float wy1_top = wz1_ceil * FOV_SCALE / temp_wy1 + (SCREEN_HEIGHT / 2);
-        float wy2_top = wz2_ceil * FOV_SCALE / temp_wy2 + (SCREEN_HEIGHT / 2);
-
-        if (control.walls.arr[i].portal != -1) {
-            render_sector2(control.walls.arr[i].portal);
-        }
-
-        for (float x = wx1; x <= wx2; x += 1.0f) {
-            float t = (x - wx1) / (wx2 - wx1);
-            float y_bottom = wy1 + t * (wy2 - wy1);
-            float y_top = wy1_top + t * (wy2_top - wy1_top);
-
-            SDL_RenderDrawLine(control.renderer, (int)x, (int)y_bottom, (int)x, (int)y_top);
-        }
     }
+
 }
 
 
@@ -223,7 +213,6 @@ void render_sector2(int sect_id) {
 //then streamline it with the macros and vector math I already made.
 void render_sector3(int sect_id) {
     //Things I need to do first:
-    //  Create arrays for the low and hi screen_y points that have already been drawn in control (so I don't draw over anything)
     //  Understand the current algorithms (mostly for world x and y to screen x and y), prob read some articles. 
     //  Then, yeah. Make render_sector3 a streamlined version of 1
 
