@@ -328,6 +328,11 @@ int main() {
         return 1;
     }
 
+    int lastTime = SDL_GetTicks();
+    int frames = 0;
+    int fps = 0;
+    int totalFrames = 0;
+    int totalTime = 0;
     
     SDL_Event e;
     while (!control.quit) {
@@ -349,9 +354,23 @@ int main() {
 
         render();
 
-
         // Present the renderer (show the content on the window)
         SDL_RenderPresent(control.renderer);
+
+        frames++;
+        int currentTime = SDL_GetTicks();
+        if (currentTime - lastTime >= 1000) {
+            fps = frames;
+            totalFrames += frames;
+            totalTime += (currentTime - lastTime);
+            frames = 0;
+            lastTime = currentTime;
+        }
+    }
+
+    if (totalTime > 0) {
+        float avgFps = (totalFrames * 1000.0) / totalTime;
+        printf("Average FPS: %.2f\n", avgFps);
     }
 
     close();
