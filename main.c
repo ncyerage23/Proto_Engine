@@ -4,41 +4,10 @@
 //gotta get to doing a makefile at some point
 
 /*The plan:
-    Make it draw the full walls w/ the draw buffer stuff
-    Understand the current code and fix it for what I wanna do. Sectors are being weird rn.
-        For some reason, it thinks two of the walls are in sector 1 when they're in sector 0, 
-        but only when I can see sector 1? Weird. It's especially weird cause it's only those two walls
+    God damn. I have come surprisingly far from where I was. Which is wonderful.
+    The current issue is trying to draw the walls, unfortunately. I think I'm getting somewhere?
+    I think the plan is to rebuild and use a pixel array. I think. New branch? Probably
 
-    Figure out switching sectors
-    Draw vertically for each bit of the line (like the real thing) instead of wireframes (add color to each sector)
-    Figure out the drawing buffer so we don't overdraw things (not the comp sci word (unless it is), just drawing over itself)
-    Eventually, level editor and wall textures. And collision detection on walls and stuff.
-
-    Then, when all of the basics are done, I just need to clean everything up and ensure that it's easy to use and well structured. 
-    Make it modular, and feel relatively easy to approach. It doesn't have to be crazy well made, but it'd be nice. 
-
-    From there, it's all gameplay. Copy the code to the dungeon crawler project. Implement enemy sprites and basic combat, 
-    map out how the dungeons will work and build the rooms. Eventually build the dungeon generator, which will be annoying, but whatever. 
-    But, yeah. Just run with it, and make a simple but fun dungeon crawler game. 
-
-    One of the fun things will be writing the script for the dungeon generator, since I want it to essentially be infinite. All the 
-    weapons and enemies need to scale as you go and stuff. It should be really fun, but, yeah I gotta figure that out. 
-
-    One thing I haven't approached yet is sprite animation. I think I can figure it out, but it may be smart to build a data structure
-    around the frames of animation. I like that idea. 
-
-    Should I try python or lua embedding for the ai enemy scripting? Perhaps. Honestly, that might be the move, but we'll see when I get there. 
-    It'd just be a little easier to do, to be honest. 
-
-    I also gotta implement timers and that sort of stuff. Making the lua/python libraries for all of this is gonna be weird. But it will be super
-    helpful. I mean like, this is exactly what I plan to do later, so yeah. 
-
-    I think this is going pretty well, although there's a lot of bugs. I'm gonna do everything super inefficient right now, except for drawing bc
-    that's gonna cut framerate. Things that will be inefficient are all the typing stuff and searching through sectors. I think I'll just always
-    search through every single sector for right now. 
-
-    holy shit it actually works so well now. well mostly. I'm still happy. Despite wasting a large amount of time on this. I need to do actual work. 
-    hey tho, good job. Nvm, my computer's about to die. What a lame. 
 */
 
 
@@ -197,7 +166,8 @@ void render_sector(int sect_id) {
 
 
 //attempt at filled walls
-//doesn't work, but could? Idk, I think i need to calculate each top and bottom between the two x's, which is weird
+//works, but is unreasonably slow. sdl draw line is the problem, lol. 
+//I think its about time for the pixel buffer
 void render_sector2(int sect_id) {
     if (sect_id < 0 || sect_id >= control.sectors.n || control.sectors.rendered[sect_id] == 1) {
         return;
@@ -226,11 +196,10 @@ void render_sector2(int sect_id) {
         w2 = wpos_to_cam(wall->p2);
 
         //means wall is behind camera, drop  (need more clipping stuff)
-        if (w1.y <= 0 || w2.y <= 0) {
-            continue;
-        }
+        if (w1.y <= 0 || w2.y <= 0) continue;
 
-        //coefficient for screen pos calculations
+        //coefficient for screen pos calculations   
+        //ig i should store these somewhere else? idek how I'd do that. 
         float inv_wy1 = FOV_SCALE / w1.y;
         float inv_wy2 = FOV_SCALE / w2.y;
 
@@ -238,18 +207,44 @@ void render_sector2(int sect_id) {
         w1.x = w1.x * inv_wy1 + hw;
         w2.x = w2.x * inv_wy2 + hw;
 
+        if (w1.x > SCREEN_WIDTH && w2.x > SCREEN_WIDTH) continue;
+        if (w1.x < 0 && w2.x < 0) continue;
+
         //convert world y to screen y
         float wy1_bottom = wz1_floor * inv_wy1 + hh;
         float wy2_bottom = wz2_floor * inv_wy2 + hh;
         float wy1_top = wz1_ceil * inv_wy1 + hh;
         float wy2_top = wz2_ceil * inv_wy2 + hh;
 
-        SDL_RenderDrawLine(control.renderer, (int)w1.x, (int)wy1_bottom, (int)w2.x, (int)wy2_bottom); // Floor edge
-        SDL_RenderDrawLine(control.renderer, (int)w1.x, (int)wy1_top, (int)w2.x, (int)wy2_top);       // Ceiling edge
+        if (wall->portal == -1) {
+            //vectors for floor and ceiling lines
+            vect floor = normal_vect( ( (vect){w2.x - w1.x, wy2_bottom - wy1_bottom} ) );
+            vect ceil = normal_vect( ( (vect){w2.x - w1.x, wy2_top - wy1_top} ) );
 
-        printf("x: %d %d\ny_bottom: %d %d\ny_top: %d %d\n\n", (int)w1.x, (int)w2.x, (int)wy1_bottom, (int)wy2_bottom, (int)wy1_top, (int)wy2_top);
+            //scale for finding top and bottom coords of line
+            float scale_floor = (floor.y / floor.x);
+            float scale_ceil = (ceil.y / ceil.x);
 
-        if (control.walls.arr[i].portal != -1) {
+            for( int x = 0; x < w2.x - w1.x; x += 1 ) {
+                int x_val = w1.x + x;
+                int bottom = wy1_bottom + (scale_floor * x);
+                int top = wy1_top + (scale_ceil * x);
+
+                if (x_val >= 0 || x_val < SCREEN_WIDTH) {
+                    printf("%d %d\n", top, bottom);
+                    if (top < control.y_hi[x_val] && bottom > control.y_lo[x_val]) {
+                        SDL_RenderDrawLine(control.renderer, x_val, top, x_val, bottom);
+                    }
+                }
+            }
+
+        } else {
+            SDL_RenderDrawLine(control.renderer, (int)w1.x, (int)wy1_bottom, (int)w2.x, (int)wy2_bottom);
+            SDL_RenderDrawLine(control.renderer, (int)w1.x, (int)wy1_top, (int)w2.x, (int)wy2_top);
+
+            SDL_RenderDrawLine(control.renderer, (int)w1.x, (int)wy1_bottom, (int)w1.x, (int)wy1_top);
+            SDL_RenderDrawLine(control.renderer, (int)w2.x, (int)wy2_bottom, (int)w2.x, (int)wy2_top);
+
             next_sector = control.walls.arr[i].portal;
         }
     }
@@ -260,12 +255,8 @@ void render_sector2(int sect_id) {
 }
 
 
-//First, imma fix up render_sector1 so it actually works w/o those weird errors and stuff.
-//then streamline it with the macros and vector math I already made.
+//dude idek
 void render_sector3(int sect_id) {
-    //Things I need to do first:
-    //  Understand the current algorithms (mostly for world x and y to screen x and y), prob read some articles. 
-
     //render_sector4's algorithm:
     //  get the sector, check if it's already been drawn (maybe make an array for that?) Or if its too far away (make a function for sector center)
     //  maybe make a function or macro to convert world coords to screen coords?? That would be nice.
@@ -281,10 +272,10 @@ void render_sector3(int sect_id) {
 
 void render() {
     memset(control.y_hi, SCREEN_HEIGHT - 1, sizeof(int) * SCREEN_WIDTH);
-    memset(control.y_hi, 0, sizeof(int) * SCREEN_WIDTH);
+    memset(control.y_lo, 0, sizeof(int) * SCREEN_WIDTH);
     memset(control.sectors.rendered, 0, sizeof(int) * control.sectors.n);
 
-    render_sector2(pcam.sector);
+    render_sector(pcam.sector);
 }
 
 

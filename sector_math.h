@@ -43,6 +43,8 @@ typedef struct {
 #define add_vect(v1, v2)        ( (vect){ v1.x + v2.x, v1.y + v2.y } )
 #define sub_vect(v1, v2)        ( (vect){ v1.x - v2.x, v1.y - v2.y } )
 #define mult_vect(v, c)         ( (vect){ v.x * c, v.y * c } )
+#define div_vect(v, c)          ( (vect){ v.x / c, v.y / c} )
+#define normal_vect(v)          ( div_vect(v, vect_len(v)) )
 #define dot_vect(v1, v2)        ( v1.x * v2.x + v1.y * v2.y )
 #define cross_vect(v1, v2)      ( v1.x * v2.y - v1.y * v2.x )
 #define vect_len(v)             ( sqrtf(v.x * v.x + v.y * v.y) )
