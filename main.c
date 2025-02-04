@@ -8,6 +8,8 @@
     The current issue is trying to draw the walls, unfortunately. I think I'm getting somewhere?
     I think the plan is to rebuild and use a pixel array. I think. New branch? Probably
 
+    So, yeah. I'll use a frame buffer to hold the pixel data and I'll update that with the render stuff. 
+
 */
 
 
@@ -261,10 +263,9 @@ void render_sector3(int sect_id) {
     //  get the sector, check if it's already been drawn (maybe make an array for that?) Or if its too far away (make a function for sector center)
     //  maybe make a function or macro to convert world coords to screen coords?? That would be nice.
     //  iterate through the walls. Figure out the coordinates using the algorithms, check if it should be drawn. If not, chuck it. 
-    //  If it's on the screen but needs clipped, modify the coords and whatnot for clipping. 
+    //  If it's on the screen but needs clipped, modify the coords and whatnot for clipping. Gotta figure out how that'll work
     //  Then, draw the walls that need drawn in that sector (if its not a portal)
-    //  If the wall's a portal, recursively call the function to render that sector. 
-    //  I think, instead of immediately calling it when the portal is found, do it at the end. Imma try that right now.
+    //  If the wall's a portal, recursively call the function to render that sector (after current sector is drawn)
     //  there's probably more, but I'll get to it after I do render3
     
 }
@@ -276,6 +277,8 @@ void render() {
     memset(control.sectors.rendered, 0, sizeof(int) * control.sectors.n);
 
     render_sector(pcam.sector);
+
+    //this is where rendering sprites and such comes in
 }
 
 
