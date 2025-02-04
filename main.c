@@ -81,15 +81,15 @@ static struct {
  
 //may also be wrong
 void handle_keys(const Uint8 *keystate) {
-    float dx = sin(pcam.angle) * 5.0, dy = cos(pcam.angle) * 5.0;
+    float dx = sin(pcam.angle) * 2.5, dy = cos(pcam.angle) * 2.5;
 
     if (keystate[SDL_SCANCODE_W]) { pcam.pos.x += dx; pcam.pos.y += dy; }
     if (keystate[SDL_SCANCODE_S]) { pcam.pos.x -= dx; pcam.pos.y -= dy; }
     if (keystate[SDL_SCANCODE_A]) { pcam.pos.x -= dy; pcam.pos.y += dx; }
     if (keystate[SDL_SCANCODE_D]) { pcam.pos.x += dy; pcam.pos.y -= dx; }
 
-    if (keystate[SDL_SCANCODE_LEFT]) pcam.angle -= 0.05;
-    if (keystate[SDL_SCANCODE_RIGHT]) pcam.angle += 0.05; 
+    if (keystate[SDL_SCANCODE_LEFT]) pcam.angle -= 0.03;
+    if (keystate[SDL_SCANCODE_RIGHT]) pcam.angle += 0.03; 
 
     if (keystate[SDL_SCANCODE_SPACE]) pcam.zpos += 1.0;
     if (keystate[SDL_SCANCODE_LSHIFT] || keystate[SDL_SCANCODE_RSHIFT] ) pcam.zpos -= 1.0;
@@ -105,87 +105,10 @@ void handle_keys(const Uint8 *keystate) {
 }
 
 
-//This currently works quite well, which is amazing. 
+
 void render_sector(int sect_id) {
-    if (sect_id < 0 || sect_id >= control.sectors.n) {
-        return;
-        //also check if it was already rendered, or is too far? idk yet
-    }
-
-    set_color(sect_id);
-
-    int i = control.sectors.arr[sect_id].first_wall;
-    int max_wall = i + control.sectors.arr[sect_id].num_walls;
-    int sect_z_floor = control.sectors.arr[sect_id].zfloor;
-    int sect_z_ceil = control.sectors.arr[sect_id].zceil;
-
-    double cs = cos((double)control.camera.angle);
-    double sn = sin((double)control.camera.angle);
-
-    int next_sector = -1;
-
-    for (i = control.sectors.arr[sect_id].first_wall; i < max_wall; i++) {
-        vect p1 = control.walls.arr[i].p1;
-        vect p2 = control.walls.arr[i].p2;
-
-        float x1 = p1.x - pcam.pos.x, y1 = p1.y - pcam.pos.y;
-        float x2 = p2.x - pcam.pos.x, y2 = p2.y - pcam.pos.y;
-
-        float wx1 = x1 * cs - y1 * sn, wy1 = y1 * cs + x1 * sn;
-        float wx2 = x2 * cs - y2 * sn, wy2 = y2 * cs + x2 * sn;
-        float wz1_floor = pcam.zpos - sect_z_floor, wz2_floor = pcam.zpos - sect_z_floor;
-        float wz1_ceil = pcam.zpos - sect_z_ceil, wz2_ceil = pcam.zpos - sect_z_ceil;
-
-        if (wy1 <= 0 || wy2 <= 0) {
-            continue;
-        }
-
-        float temp_wy1 = wy1, temp_wy2 = wy2;
-        wx1 = wx1 * FOV_SCALE / wy1 + (SCREEN_WIDTH/2); wy1 = wz1_floor * FOV_SCALE / temp_wy1 + (SCREEN_HEIGHT/2);
-        wx2 = wx2 * FOV_SCALE / wy2 + (SCREEN_WIDTH/2); wy2 = wz2_floor * FOV_SCALE / temp_wy2 + (SCREEN_HEIGHT/2);
-
-        float wy1_top = wz1_ceil * FOV_SCALE / temp_wy1 + (SCREEN_HEIGHT / 2);
-        float wy2_top = wz2_ceil * FOV_SCALE / temp_wy2 + (SCREEN_HEIGHT / 2);
-
-        if (control.walls.arr[i].portal != -1) {
-            int delta_zfloor = control.sectors.arr[sect_id].zfloor - control.sectors.arr[control.walls.arr[i].portal].zfloor;
-            int delta_zceil = control.sectors.arr[sect_id].zceil - control.sectors.arr[control.walls.arr[i].portal].zceil;
-
-            float wall_len = 60.0;
-            float rel_wall_len = vect_len( sub_vect( ((vect){wx1, wy1}), ((vect){wx1, wy1_top}) ));
-            float m = delta_zfloor / wall_len;
-            m *= rel_wall_len;
-            float n = delta_zceil / wall_len;
-            n *= rel_wall_len;
-
-            if (delta_zfloor < 0) {
-                SDL_RenderDrawLine(control.renderer, (int)wx1, (int)wy1, (int)wx2, (int)wy2);
-                SDL_RenderDrawLine(control.renderer, (int)wx1, (int)wy1 + m, (int)wx2, (int)wy2 + m);
-            } 
-            
-            if (delta_zceil < 0) {
-                SDL_RenderDrawLine(control.renderer, (int)wx1, (int)wy1_top + n, (int)wx2, (int)wy2_top + n);
-                SDL_RenderDrawLine(control.renderer, (int)wx1, (int)wy1_top, (int)wx2, (int)wy2_top);
-            }
-            
-
-            render_sector(control.walls.arr[i].portal);
-            
-        } else {
-            SDL_RenderDrawLine(control.renderer, (int)wx1, (int)wy1, (int)wx2, (int)wy2);
-            SDL_RenderDrawLine(control.renderer, (int)wx1, (int)wy1_top, (int)wx2, (int)wy2_top);
-
-            SDL_RenderDrawLine(control.renderer, (int)wx1, (int)wy1, (int)wx1, (int)wy1_top);
-            SDL_RenderDrawLine(control.renderer, (int)wx2, (int)wy2, (int)wx2, (int)wy2_top);
-        }
-        
-    }
-}
-
-void render_sector1(int sect_id) {
     if (sect_id < 0 || sect_id >= control.sectors.n || control.sectors.rendered[sect_id] == 1) {
         return;
-        //also check if it was already rendered, or is too far? idk yet
     }
 
     set_color(sect_id);
@@ -236,7 +159,7 @@ void render_sector1(int sect_id) {
     }
     
     if (next_sector != -1 && control.sectors.rendered[next_sector] != 1) {
-        render_sector1(next_sector);
+        render_sector(next_sector);
     }
 }
 
@@ -325,7 +248,7 @@ void clear_rendered() {
 //idk what else I need here, maybe just use the above one here? idk yet. 
 void render() {
     clear_rendered();
-    render_sector1(control.camera.sector);
+    render_sector(control.camera.sector);
 }
 
 
