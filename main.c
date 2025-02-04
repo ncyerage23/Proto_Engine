@@ -95,17 +95,12 @@ void handle_keys(const Uint8 *keystate) {
     if (keystate[SDL_SCANCODE_LSHIFT] || keystate[SDL_SCANCODE_RSHIFT] ) pcam.zpos -= 1.0;
 
 
-    //It doesn't think I'm in sector 0? why?
     for (int i = 0; i < control.sectors.n; i++) {
         if (i != pcam.sector && in_sector(pcam.pos, &control.sectors.arr[i], control.walls.arr) == 1) {
             pcam.sector = i;
-            //printf("%d\n", i);
             pcam.zpos = control.sectors.arr[i].zfloor + 20.0;
-            //printf("%f\n\n", pcam.zpos);
         }
     }
-    
-
 
 }
 
