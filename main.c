@@ -117,11 +117,16 @@ void handle_keys(const Uint8 *keystate) {
     }
 }
 
-//do this later when I texture the full wall? idk
-// void draw_wall(vect p1, vect p2, float zfloor, float zceil) {
-    
-// }
 
+//converts world pos to camera pos, but not really? It really just finds relative pos from the cam.
+//make more of these
+static inline vect wpos_to_cam(vect p) {
+    const vect u = { p.x - pcam.pos.x, p.y - pcam.pos.y };
+    return (vect) {
+        u.x * pcam.cos - u.y * pcam.sin,
+        u.x * pcam.sin + u.y * pcam.cos,
+    };
+}
 
 void render_sector(int sect_id) {
     if (sect_id < 0 || sect_id >= control.sectors.n || control.sectors.rendered[sect_id] == 1) {
@@ -131,41 +136,45 @@ void render_sector(int sect_id) {
     set_color(sect_id);
     control.sectors.rendered[sect_id] = 1;
     sector_t* sect = &control.sectors.arr[sect_id];
+
+    //make this an array later
     int next_sector = -1;
 
-    double cs = pcam.cos, sn = pcam.sin;
+    //helpful values
     int hh = (SCREEN_HEIGHT/2), hw = (SCREEN_WIDTH/2);
+
+    //z values for walls
+    float wz1_floor = pcam.zpos - sect->zfloor;
+    float wz1_ceil = pcam.zpos - sect->zceil;
+    float wz2_floor = pcam.zpos - sect->zfloor;
+    float wz2_ceil = pcam.zpos - sect->zceil;
 
     vect p1, p2, w1, w2;
     for (int i = sect->first_wall; i < sect->first_wall + sect->num_walls; i++) {
         wall_t* wall = &control.walls.arr[i];
-        p1 = sub_vect(wall->p1, pcam.pos);
-        p2 = sub_vect(wall->p2, pcam.pos);
+        w1 = wpos_to_cam(wall->p1);
+        w2 = wpos_to_cam(wall->p2);
 
-        w1.x = p1.x * cs - p1.y * sn;
-        w1.y = p1.y * cs + p1.x * sn;
-        w2.x = p2.x * cs - p2.y * sn;
-        w2.y = p2.y * cs + p2.x * sn;
-
+        //means wall is behind camera, drop     (need more clipping stuff)
         if (w1.y <= 0 || w2.y <= 0) {
             continue;
         }
 
+        //coefficient for screen pos calculations
         float inv_wy1 = FOV_SCALE / w1.y;
         float inv_wy2 = FOV_SCALE / w2.y;
+
+        //convert world x to screen x
         w1.x = w1.x * inv_wy1 + hw;
         w2.x = w2.x * inv_wy2 + hw;
-        
-        float wz1_floor = pcam.zpos - sect->zfloor;
-        float wz1_ceil = pcam.zpos - sect->zceil;
-        float wz2_floor = pcam.zpos - sect->zfloor;
-        float wz2_ceil = pcam.zpos - sect->zceil;
 
+        //convert world y to screen y
         float wy1_bottom = wz1_floor * inv_wy1 + hh;
         float wy2_bottom = wz2_floor * inv_wy2 + hh;
         float wy1_top = wz1_ceil * inv_wy1 + hh;
         float wy2_top = wz2_ceil * inv_wy2 + hh;
 
+        //drawing wall lines
         SDL_RenderDrawLine(control.renderer, (int)w1.x, (int)wy1_bottom, (int)w2.x, (int)wy2_bottom); // Floor edge
         SDL_RenderDrawLine(control.renderer, (int)w1.x, (int)wy1_top, (int)w2.x, (int)wy2_top);       // Ceiling edge
         SDL_RenderDrawLine(control.renderer, (int)w1.x, (int)wy1_bottom, (int)w1.x, (int)wy1_top);    // Left vertical
@@ -187,7 +196,6 @@ void render_sector(int sect_id) {
 void render_sector3(int sect_id) {
     //Things I need to do first:
     //  Understand the current algorithms (mostly for world x and y to screen x and y), prob read some articles. 
-    //  Then, yeah. Make render_sector3 a streamlined version of 1
 
     //render_sector4's algorithm:
     //  get the sector, check if it's already been drawn (maybe make an array for that?) Or if its too far away (make a function for sector center)
@@ -201,16 +209,13 @@ void render_sector3(int sect_id) {
     
 }
 
-void clear_rendered() {
-    for (int i = 0; i < control.sectors.n; i++) {
-        control.sectors.rendered[i] = 0;
-    }
-}
 
-//idk what else I need here, maybe just use the above one here? idk yet. 
 void render() {
-    clear_rendered();
-    render_sector(control.camera.sector);
+    memset(control.y_hi, SCREEN_HEIGHT - 1, sizeof(int) * SCREEN_WIDTH);
+    memset(control.y_hi, 0, sizeof(int) * SCREEN_WIDTH);
+    memset(control.sectors.rendered, 0, sizeof(int) * control.sectors.n);
+
+    render_sector(pcam.sector);
 }
 
 
@@ -255,7 +260,6 @@ void close() {
 }
 
 
-//getting somewhere, I think. Quit copying tho, learn it yourself. it's all so weird tho lol. 
 static int read_file(const char* path) {
     control.sectors.n = 1;
 
@@ -270,7 +274,7 @@ static int read_file(const char* path) {
 
         if (sscanf(line, "SECT %d", &sect_count) == 1) {
             control.sectors.arr = (sector_t*)malloc( sizeof(sector_t) * sect_count );
-            control.sectors.rendered = (int*)malloc(  sizeof(int) * sect_count );
+            control.sectors.rendered = (int*)malloc( sizeof(int) * sect_count );
             if (!control.sectors.arr) { fclose(f); close(); return 1; }
 
             for (int i = 0; i < sect_count; i++) {
