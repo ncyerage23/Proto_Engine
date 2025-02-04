@@ -191,6 +191,71 @@ void render_sector(int sect_id) {
 }
 
 
+
+//attempt at filled walls
+//doesn't work, but could? Idk, I think i need to calculate each top and bottom between the two x's, which is weird
+void render_sector2(int sect_id) {
+    if (sect_id < 0 || sect_id >= control.sectors.n || control.sectors.rendered[sect_id] == 1) {
+        return;
+    }
+
+    set_color(sect_id);
+    control.sectors.rendered[sect_id] = 1;
+    sector_t* sect = &control.sectors.arr[sect_id];
+
+    //make this an array later
+    int next_sector = -1;
+
+    //helpful values
+    int hh = (SCREEN_HEIGHT/2), hw = (SCREEN_WIDTH/2);
+
+    //z values for walls
+    float wz1_floor = pcam.zpos - sect->zfloor;
+    float wz1_ceil = pcam.zpos - sect->zceil;
+    float wz2_floor = pcam.zpos - sect->zfloor;
+    float wz2_ceil = pcam.zpos - sect->zceil;
+
+    vect p1, p2, w1, w2;
+    for (int i = sect->first_wall; i < sect->first_wall + sect->num_walls; i++) {
+        wall_t* wall = &control.walls.arr[i];
+        w1 = wpos_to_cam(wall->p1);
+        w2 = wpos_to_cam(wall->p2);
+
+        //means wall is behind camera, drop  (need more clipping stuff)
+        if (w1.y <= 0 || w2.y <= 0) {
+            continue;
+        }
+
+        //coefficient for screen pos calculations
+        float inv_wy1 = FOV_SCALE / w1.y;
+        float inv_wy2 = FOV_SCALE / w2.y;
+
+        //convert world x to screen x
+        w1.x = w1.x * inv_wy1 + hw;
+        w2.x = w2.x * inv_wy2 + hw;
+
+        //convert world y to screen y
+        float wy1_bottom = wz1_floor * inv_wy1 + hh;
+        float wy2_bottom = wz2_floor * inv_wy2 + hh;
+        float wy1_top = wz1_ceil * inv_wy1 + hh;
+        float wy2_top = wz2_ceil * inv_wy2 + hh;
+
+        SDL_RenderDrawLine(control.renderer, (int)w1.x, (int)wy1_bottom, (int)w2.x, (int)wy2_bottom); // Floor edge
+        SDL_RenderDrawLine(control.renderer, (int)w1.x, (int)wy1_top, (int)w2.x, (int)wy2_top);       // Ceiling edge
+
+        printf("x: %d %d\ny_bottom: %d %d\ny_top: %d %d\n\n", (int)w1.x, (int)w2.x, (int)wy1_bottom, (int)wy2_bottom, (int)wy1_top, (int)wy2_top);
+
+        if (control.walls.arr[i].portal != -1) {
+            next_sector = control.walls.arr[i].portal;
+        }
+    }
+    
+    if (next_sector != -1 && control.sectors.rendered[next_sector] != 1) {
+        render_sector2(next_sector);
+    }
+}
+
+
 //First, imma fix up render_sector1 so it actually works w/o those weird errors and stuff.
 //then streamline it with the macros and vector math I already made.
 void render_sector3(int sect_id) {
@@ -215,7 +280,7 @@ void render() {
     memset(control.y_hi, 0, sizeof(int) * SCREEN_WIDTH);
     memset(control.sectors.rendered, 0, sizeof(int) * control.sectors.n);
 
-    render_sector(pcam.sector);
+    render_sector2(pcam.sector);
 }
 
 
