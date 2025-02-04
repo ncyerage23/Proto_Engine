@@ -117,6 +117,11 @@ void handle_keys(const Uint8 *keystate) {
     }
 }
 
+//do this later when I texture the full wall? idk
+// void draw_wall(vect p1, vect p2, float zfloor, float zceil) {
+    
+// }
+
 
 void render_sector(int sect_id) {
     if (sect_id < 0 || sect_id >= control.sectors.n || control.sectors.rendered[sect_id] == 1) {
@@ -125,45 +130,46 @@ void render_sector(int sect_id) {
 
     set_color(sect_id);
     control.sectors.rendered[sect_id] = 1;
-
-    int i = control.sectors.arr[sect_id].first_wall;
-    int max_wall = i + control.sectors.arr[sect_id].num_walls;
-    int sect_z_floor = control.sectors.arr[sect_id].zfloor;
-    int sect_z_ceil = control.sectors.arr[sect_id].zceil;
-
-    double cs = cos((double)control.camera.angle);
-    double sn = sin((double)control.camera.angle);
-
+    sector_t* sect = &control.sectors.arr[sect_id];
     int next_sector = -1;
 
-    for (i = control.sectors.arr[sect_id].first_wall; i < max_wall; i++) {
-        vect p1 = control.walls.arr[i].p1;
-        vect p2 = control.walls.arr[i].p2;
+    double cs = pcam.cos, sn = pcam.sin;
+    int hh = (SCREEN_HEIGHT/2), hw = (SCREEN_WIDTH/2);
 
-        float x1 = p1.x - pcam.pos.x, y1 = p1.y - pcam.pos.y;
-        float x2 = p2.x - pcam.pos.x, y2 = p2.y - pcam.pos.y;
+    vect p1, p2, w1, w2;
+    for (int i = sect->first_wall; i < sect->first_wall + sect->num_walls; i++) {
+        wall_t* wall = &control.walls.arr[i];
+        p1 = sub_vect(wall->p1, pcam.pos);
+        p2 = sub_vect(wall->p2, pcam.pos);
 
-        float wx1 = x1 * cs - y1 * sn, wy1 = y1 * cs + x1 * sn;
-        float wx2 = x2 * cs - y2 * sn, wy2 = y2 * cs + x2 * sn;
-        float wz1_floor = pcam.zpos - sect_z_floor, wz2_floor = pcam.zpos - sect_z_floor;
-        float wz1_ceil = pcam.zpos - sect_z_ceil, wz2_ceil = pcam.zpos - sect_z_ceil;
+        w1.x = p1.x * cs - p1.y * sn;
+        w1.y = p1.y * cs + p1.x * sn;
+        w2.x = p2.x * cs - p2.y * sn;
+        w2.y = p2.y * cs + p2.x * sn;
 
-        if (wy1 <= 0 || wy2 <= 0) {
+        if (w1.y <= 0 || w2.y <= 0) {
             continue;
         }
 
-        float temp_wy1 = wy1, temp_wy2 = wy2;
-        wx1 = wx1 * FOV_SCALE / wy1 + (SCREEN_WIDTH/2); wy1 = wz1_floor * FOV_SCALE / temp_wy1 + (SCREEN_HEIGHT/2);
-        wx2 = wx2 * FOV_SCALE / wy2 + (SCREEN_WIDTH/2); wy2 = wz2_floor * FOV_SCALE / temp_wy2 + (SCREEN_HEIGHT/2);
+        float inv_wy1 = FOV_SCALE / w1.y;
+        float inv_wy2 = FOV_SCALE / w2.y;
+        w1.x = w1.x * inv_wy1 + hw;
+        w2.x = w2.x * inv_wy2 + hw;
+        
+        float wz1_floor = pcam.zpos - sect->zfloor;
+        float wz1_ceil = pcam.zpos - sect->zceil;
+        float wz2_floor = pcam.zpos - sect->zfloor;
+        float wz2_ceil = pcam.zpos - sect->zceil;
 
-        float wy1_top = wz1_ceil * FOV_SCALE / temp_wy1 + (SCREEN_HEIGHT / 2);
-        float wy2_top = wz2_ceil * FOV_SCALE / temp_wy2 + (SCREEN_HEIGHT / 2);
+        float wy1_bottom = wz1_floor * inv_wy1 + hh;
+        float wy2_bottom = wz2_floor * inv_wy2 + hh;
+        float wy1_top = wz1_ceil * inv_wy1 + hh;
+        float wy2_top = wz2_ceil * inv_wy2 + hh;
 
-        SDL_RenderDrawLine(control.renderer, (int)wx1, (int)wy1, (int)wx2, (int)wy2);
-        SDL_RenderDrawLine(control.renderer, (int)wx1, (int)wy1_top, (int)wx2, (int)wy2_top);
-
-        SDL_RenderDrawLine(control.renderer, (int)wx1, (int)wy1, (int)wx1, (int)wy1_top);
-        SDL_RenderDrawLine(control.renderer, (int)wx2, (int)wy2, (int)wx2, (int)wy2_top);
+        SDL_RenderDrawLine(control.renderer, (int)w1.x, (int)wy1_bottom, (int)w2.x, (int)wy2_bottom); // Floor edge
+        SDL_RenderDrawLine(control.renderer, (int)w1.x, (int)wy1_top, (int)w2.x, (int)wy2_top);       // Ceiling edge
+        SDL_RenderDrawLine(control.renderer, (int)w1.x, (int)wy1_bottom, (int)w1.x, (int)wy1_top);    // Left vertical
+        SDL_RenderDrawLine(control.renderer, (int)w2.x, (int)wy2_bottom, (int)w2.x, (int)wy2_top);    // Right vertical
 
         if (control.walls.arr[i].portal != -1) {
             next_sector = control.walls.arr[i].portal;
@@ -173,39 +179,6 @@ void render_sector(int sect_id) {
     if (next_sector != -1 && control.sectors.rendered[next_sector] != 1) {
         render_sector(next_sector);
     }
-}
-
-
-//revised render_sector, actually figure it out tho? 
-void render_sector2(int sect_id) {
-    if (sect_id < 0 || sect_id >= control.sectors.n || control.sectors.rendered[sect_id] == 1) {
-        return;
-    } 
-
-    set_color(sect_id);
-    control.sectors.rendered[sect_id] = 1;
-    float zfloor = control.sectors.arr->zfloor, zceil = control.sectors.arr->zceil;
-
-    //gonna need to make this an array later
-    int next_sector = -1;
-
-    vect p1, p2, w1, w2;
-    for (int i = 0; i < control.sectors.arr[sect_id].num_walls; i++) {
-        p1 = sub_vect(p1, pcam.pos);
-        p2 = sub_vect(p2, pcam.pos);
-
-        w1.x = p1.x * pcam.cos - p1.y * pcam.sin; w1.y = p1.y * pcam.cos + p1.x * pcam.sin;
-        w2.x = p2.x * pcam.cos - p2.y * pcam.sin; w2.y = p2.y * pcam.cos + p2.x * pcam.sin;
-
-        float wz1_floor = pcam.zpos - zfloor, wz2_floor = pcam.zpos - zfloor;
-        float wz1_ceil = pcam.zpos - zceil, wz2_ceil = pcam.zpos - zceil;
-
-        //this may be the clipping thing
-        if (w1.y <= 0 || w2.y <= 0) {
-            continue;
-        }
-    }
-
 }
 
 
@@ -330,6 +303,9 @@ static int read_file(const char* path) {
         }
 
     }
+
+    pcam.cos = cos(pcam.angle);
+    pcam.sin = sin(pcam.angle);
 
     fclose(f);
     return 0;
