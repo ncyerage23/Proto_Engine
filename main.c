@@ -4,12 +4,28 @@
 //gotta get to doing a makefile at some point
 
 /*The plan:
-    God damn. I have come surprisingly far from where I was. Which is wonderful.
-    The current issue is trying to draw the walls, unfortunately. I think I'm getting somewhere?
-    I think the plan is to rebuild and use a pixel array. I think. New branch? Probably
+    Hey! I got it to work! The buffer switch took like a half hour tops! I'm killin it!
+    So, I think this is the plan. Now that I'm on a new branch, let's slightly restart and 
+    make it all work a bit better. For starters, I gotta cull and not draw things off the screen
+    without just dropping those things altogether. This should be a bit of a challenge, but hey!
+    Look at me now!
 
-    So, yeah. I'll use a frame buffer to hold the pixel data and I'll update that with the render stuff. 
+    From there, if it still crashes and all that, I think I need to figure out why. Use gdb and
+    valgrind and figure out how to use them to their fullest. Then, yeah. Just improve the code. 
 
+    After that, I guess its time for floors and ceilings, and the map editor. I'll probably need
+    to restart then a second time, just to map out how that'll all work. Textures for walls, floors,
+    ceilings, and the offsets between different floors and ceilings all need to be tracked, I think. Damn.
+
+    But yeah. this is going great. Once I get the rendering and shit all worked out for this, I guess
+    I could start trying to do sprites, "decals" and whatever other game objects. Either sprites or decals
+    seem the easiest. I do wanna get to voxel objects as well. That should be fun. 
+
+    One thing I want to keep in mind with the rewrites is to increase abstraction. That'll help the code make
+    a lot more sense and all that. I think I'll keep everything in C for this engine and the dungeon crawler, 
+    but later I'm sure c++ would be the move. Lua (or python) integration is definitely gonna be a big thing
+    later, so I should really read up on that. I'm thinking this version is in python, and then whatever later
+    versions of the engine I'll learn lua. Unless python really is that slow, or lua really is that easy. Time will tell. 
 */
 
 
@@ -33,14 +49,25 @@
 #define set_color(id)       ( SDL_SetRenderDrawColor(control.renderer, (id) ? 255 : 0, 0, (id) ? 0 : 255, 255) )
 #define SET_TRIG            pcam.cos = cos(pcam.angle); pcam.sin = sin(pcam.angle);
 
+#define BLUE                0xFFFF0000
+#define RED                 0xFF0000FF
+#define GREEN               0xFF00FF00
+#define WHITE               0xFFFFFFFF
+#define BLACK               0xFF000000
+
+#define sect_color(id)      ( (id) ? BLUE : RED )
+
 
 //Main controller for like everything in the game
 //holds all the data and stuff. Also calls the functions
 static struct {
     SDL_Window *window;
     SDL_Renderer *renderer;
+    SDL_Texture * texture;
+    uint32_t *pixels;
     int quit;
 
+    
     struct { sector_t *arr; size_t n; int *rendered; } sectors;
     struct { wall_t *arr; size_t n; } walls;
 
@@ -165,17 +192,18 @@ void render_sector(int sect_id) {
     }
 }
 
+void draw_line(int x, int y_lo, int y_hi, uint32_t color) {
+    for (int y = y_lo; y <= y_hi; y++) {
+        control.pixels[y * SCREEN_WIDTH + x] = color;
+    }
+}
 
-
-//attempt at filled walls
-//works, but is unreasonably slow. sdl draw line is the problem, lol. 
-//I think its about time for the pixel buffer
+//attempt at filled walls, works poorly
 void render_sector2(int sect_id) {
     if (sect_id < 0 || sect_id >= control.sectors.n || control.sectors.rendered[sect_id] == 1) {
         return;
     }
 
-    set_color(sect_id);
     control.sectors.rendered[sect_id] = 1;
     sector_t* sect = &control.sectors.arr[sect_id];
 
@@ -231,24 +259,13 @@ void render_sector2(int sect_id) {
                 int x_val = w1.x + x;
                 int bottom = wy1_bottom + (scale_floor * x);
                 int top = wy1_top + (scale_ceil * x);
-
-                if (x_val >= 0 || x_val < SCREEN_WIDTH) {
-                    printf("%d %d\n", top, bottom);
-                    if (top < control.y_hi[x_val] && bottom > control.y_lo[x_val]) {
-                        SDL_RenderDrawLine(control.renderer, x_val, top, x_val, bottom);
-                    }
-                }
+                //printf("%d, %d, %d\n", x_val, top, bottom);
+                draw_line(x_val, bottom, top, sect_color(sect_id));
             }
 
-        } else {
-            SDL_RenderDrawLine(control.renderer, (int)w1.x, (int)wy1_bottom, (int)w2.x, (int)wy2_bottom);
-            SDL_RenderDrawLine(control.renderer, (int)w1.x, (int)wy1_top, (int)w2.x, (int)wy2_top);
-
-            SDL_RenderDrawLine(control.renderer, (int)w1.x, (int)wy1_bottom, (int)w1.x, (int)wy1_top);
-            SDL_RenderDrawLine(control.renderer, (int)w2.x, (int)wy2_bottom, (int)w2.x, (int)wy2_top);
-
-            next_sector = control.walls.arr[i].portal;
-        }
+        } 
+        else next_sector = control.walls.arr[i].portal;
+        
     }
     
     if (next_sector != -1 && control.sectors.rendered[next_sector] != 1) {
@@ -257,28 +274,94 @@ void render_sector2(int sect_id) {
 }
 
 
-//dude idek
 void render_sector3(int sect_id) {
-    //render_sector4's algorithm:
-    //  get the sector, check if it's already been drawn (maybe make an array for that?) Or if its too far away (make a function for sector center)
-    //  maybe make a function or macro to convert world coords to screen coords?? That would be nice.
-    //  iterate through the walls. Figure out the coordinates using the algorithms, check if it should be drawn. If not, chuck it. 
-    //  If it's on the screen but needs clipped, modify the coords and whatnot for clipping. Gotta figure out how that'll work
-    //  Then, draw the walls that need drawn in that sector (if its not a portal)
-    //  If the wall's a portal, recursively call the function to render that sector (after current sector is drawn)
-    //  there's probably more, but I'll get to it after I do render3
-    
+    if (sect_id < 0 || sect_id >= control.sectors.n || control.sectors.rendered[sect_id] == 1) {
+        return;
+    }
+
+    control.sectors.rendered[sect_id] = 1;
+    sector_t* sect = &control.sectors.arr[sect_id];
+
+    //make this an array later
+    int next_sector = -1;
+
+    //helpful values
+    int hh = (SCREEN_HEIGHT/2), hw = (SCREEN_WIDTH/2);
+
+    //z values for walls
+    float wz1_floor = pcam.zpos - sect->zfloor;
+    float wz1_ceil = pcam.zpos - sect->zceil;
+    float wz2_floor = pcam.zpos - sect->zfloor;
+    float wz2_ceil = pcam.zpos - sect->zceil;
+
+    vect p1, p2, w1, w2;
+    for (int i = sect->first_wall; i < sect->first_wall + sect->num_walls; i++) {
+        wall_t* wall = &control.walls.arr[i];
+        w1 = wpos_to_cam(wall->p1);
+        w2 = wpos_to_cam(wall->p2);
+
+        //means wall is behind camera, drop  (need more clipping stuff)
+        if (w1.y <= 0 || w2.y <= 0) continue;
+
+        //coefficient for screen pos calculations   
+        //ig i should store these somewhere else? idek how I'd do that. 
+        float inv_wy1 = FOV_SCALE / w1.y;
+        float inv_wy2 = FOV_SCALE / w2.y;
+
+        //convert world x to screen x
+        w1.x = w1.x * inv_wy1 + hw;
+        w2.x = w2.x * inv_wy2 + hw;
+
+        if (w1.x > SCREEN_WIDTH && w2.x > SCREEN_WIDTH) continue;
+        if (w1.x < 0 && w2.x < 0) continue;
+
+        //convert world y to screen y
+        float wy1_bottom = wz1_floor * inv_wy1 + hh;
+        float wy2_bottom = wz2_floor * inv_wy2 + hh;
+        float wy1_top = wz1_ceil * inv_wy1 + hh;
+        float wy2_top = wz2_ceil * inv_wy2 + hh;
+
+        if (wall->portal == -1) {
+            //printf("wall coords: %.2f, %.2f\nscreen coords: %.2f, %.2f\t%.2f, %.2f\n\n", wall->p1.x, wall->p1.y, w1.x, wy1_bottom, w2.x, wy2_bottom);
+
+            vect floor = normal_vect( ( (vect){w2.x - w1.x, wy2_bottom - wy1_bottom} ) );
+            vect ceil = normal_vect( ( (vect){w2.x - w1.x, wy2_top - wy1_top} ) );
+
+            float scale_floor = (floor.y / floor.x);
+            float scale_ceil = (ceil.y / ceil.x);
+
+            for (int x = 0; x < w2.x - w1.x; x++) {
+                int x_val = w1.x + x;
+                int bottom = wy1_bottom + (scale_floor * x);
+                int top = wy1_top + (scale_ceil * x);
+                if (x_val >= 0 && x_val <= SCREEN_WIDTH) {
+                    draw_line(x_val, top, bottom, sect_color(sect_id));
+                }
+            }
+
+        } else {
+            next_sector = wall->portal;
+        }
+    }
+
+    if (next_sector != -1 && control.sectors.rendered[next_sector] != 1) {
+        render_sector3(next_sector);
+    }
+
 }
 
 
 void render() {
-    memset(control.y_hi, SCREEN_HEIGHT - 1, sizeof(int) * SCREEN_WIDTH);
-    memset(control.y_lo, 0, sizeof(int) * SCREEN_WIDTH);
-    memset(control.sectors.rendered, 0, sizeof(int) * control.sectors.n);
+    memset(control.pixels, 0, sizeof(uint32_t) * SCREEN_HEIGHT * SCREEN_WIDTH);     //clears framebuffer
+    memset(control.y_hi, SCREEN_HEIGHT - 1, sizeof(int) * SCREEN_WIDTH);            //clears hi pixel drawn
+    memset(control.y_lo, 0, sizeof(int) * SCREEN_WIDTH);                            //clears low pixel drawn
+    memset(control.sectors.rendered, 0, sizeof(int) * control.sectors.n);           //resets all sectors to not-rendered
 
-    render_sector(pcam.sector);
+    render_sector3(pcam.sector);
 
     //this is where rendering sprites and such comes in
+
+    SDL_UpdateTexture(control.texture, NULL, control.pixels, SCREEN_WIDTH * sizeof(uint32_t));
 }
 
 
@@ -308,6 +391,15 @@ int init() {
         return 1;
     }
 
+    control.texture = SDL_CreateTexture(control.renderer, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_STREAMING, SCREEN_WIDTH, SCREEN_HEIGHT);
+    if (!control.texture) {
+        printf("Texture could not be created! SDL_Error: %s\n", SDL_GetError());
+        SDL_DestroyRenderer(control.renderer);
+        SDL_DestroyWindow(control.window);
+        SDL_Quit();
+        return 1;
+    }
+
     control.sectors.n = 0;
     control.walls.n = 0;
     control.quit = 0;
@@ -317,6 +409,8 @@ int init() {
 void close() {
     if (control.sectors.arr)    free(control.sectors.arr);
     if (control.walls.arr)      free(control.walls.arr);
+    if (control.pixels)         free(control.pixels);
+    if (control.texture)        SDL_DestroyTexture(control.texture);
     if (control.renderer)       SDL_DestroyRenderer(control.renderer);
     if (control.window)         SDL_DestroyWindow(control.window);
     SDL_Quit();
@@ -371,6 +465,10 @@ static int read_file(const char* path) {
 
     }
 
+    control.pixels = (uint32_t*)malloc(sizeof(uint32_t) * SCREEN_HEIGHT * SCREEN_WIDTH);
+    if (!control.pixels) return 1;
+    memset(control.pixels, 0, sizeof(uint32_t) * SCREEN_HEIGHT * SCREEN_WIDTH);
+
     pcam.cos = cos(pcam.angle);
     pcam.sin = sin(pcam.angle);
 
@@ -416,8 +514,8 @@ int main() {
         SDL_RenderClear(control.renderer);
 
         render();
-
-        // Present the renderer (show the content on the window)
+        
+        SDL_RenderCopy(control.renderer, control.texture, NULL, NULL);
         SDL_RenderPresent(control.renderer);
 
         frames++;
