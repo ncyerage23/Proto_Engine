@@ -1,7 +1,5 @@
 //Starting file for Proto Engine
-
 //compile command btw: gcc main.c sector_math.c -o poop -lSDL2
-//gotta get to doing a makefile at some point
 
 /*The plan:
     Hey! I got it to work! The buffer switch took like a half hour tops! I'm killin it!
@@ -31,15 +29,16 @@
 /*The current plan:
     Idk what's going wrong here, honestly. Clipping doesn't seem to be the issue. Idk. I guess I should just start
     using gdb and/or valgrind, but idk how to do that because macOS seems to be a little picky about that sort of thing.
+
+    So yeah. My two big things I gotta do now are: figuring out debugging / fixing the crashing problem, and rebuilding 
+    the code with all my new knowledge. lol. I think I should start adding more abstraction to the files as well. Like,
+    this file is pushing 500 lines of code, and it's mostly a mess. Maybe make the drawing stuff on a separate file, 
+    and then have this one just deal with the game logic and that kind of thing? That's probably a good idea. 
 */
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <SDL2/SDL.h>
-
-//do this later, when I sort of restart. There's a lot of changes to be made, so yeah. 
-//I can use this to help with all the speed. I can use it as a buffer for pixels
-//#include <GL/glew.h>
 
 #include "sector_math.h"
 

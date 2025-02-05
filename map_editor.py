@@ -7,6 +7,9 @@ So, the plan here is to just make a simple level editor. And load in the current
 from there, idk. Give the sectors names (numbers) and display them on each sector
 
 I should learn a bit about pyqt before doing this, lol. it'll be weird if not. 
+Tbh, just use tkinter. I know how to use it, it'll be way easier, at least for now with the 2d stuff. 
+Later, I guess I could write an editor in C which is way more flexible and stuff, though that'd be 
+a huge pain in the ass. I could also make one in pygame. Slightly less of a pain, but close. 
 '''
 
 import sys
