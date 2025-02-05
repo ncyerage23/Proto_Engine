@@ -28,6 +28,10 @@
     versions of the engine I'll learn lua. Unless python really is that slow, or lua really is that easy. Time will tell. 
 */
 
+/*The current plan:
+    Idk what's going wrong here, honestly. Clipping doesn't seem to be the issue. Idk. I guess I should just start
+    using gdb and/or valgrind, but idk how to do that because macOS seems to be a little picky about that sort of thing.
+*/
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -130,67 +134,6 @@ static inline vect wpos_to_cam(vect p) {
     };
 }
 
-void render_sector(int sect_id) {
-    if (sect_id < 0 || sect_id >= control.sectors.n || control.sectors.rendered[sect_id] == 1) {
-        return;
-    }
-
-    set_color(sect_id);
-    control.sectors.rendered[sect_id] = 1;
-    sector_t* sect = &control.sectors.arr[sect_id];
-
-    //make this an array later
-    int next_sector = -1;
-
-    //helpful values
-    int hh = (SCREEN_HEIGHT/2), hw = (SCREEN_WIDTH/2);
-
-    //z values for walls
-    float wz1_floor = pcam.zpos - sect->zfloor;
-    float wz1_ceil = pcam.zpos - sect->zceil;
-    float wz2_floor = pcam.zpos - sect->zfloor;
-    float wz2_ceil = pcam.zpos - sect->zceil;
-
-    vect p1, p2, w1, w2;
-    for (int i = sect->first_wall; i < sect->first_wall + sect->num_walls; i++) {
-        wall_t* wall = &control.walls.arr[i];
-        w1 = wpos_to_cam(wall->p1);
-        w2 = wpos_to_cam(wall->p2);
-
-        //means wall is behind camera, drop     (need more clipping stuff)
-        if (w1.y <= 0 || w2.y <= 0) {
-            continue;
-        }
-
-        //coefficient for screen pos calculations
-        float inv_wy1 = FOV_SCALE / w1.y;
-        float inv_wy2 = FOV_SCALE / w2.y;
-
-        //convert world x to screen x
-        w1.x = w1.x * inv_wy1 + hw;
-        w2.x = w2.x * inv_wy2 + hw;
-
-        //convert world y to screen y
-        float wy1_bottom = wz1_floor * inv_wy1 + hh;
-        float wy2_bottom = wz2_floor * inv_wy2 + hh;
-        float wy1_top = wz1_ceil * inv_wy1 + hh;
-        float wy2_top = wz2_ceil * inv_wy2 + hh;
-
-        //drawing wall lines
-        SDL_RenderDrawLine(control.renderer, (int)w1.x, (int)wy1_bottom, (int)w2.x, (int)wy2_bottom); // Floor edge
-        SDL_RenderDrawLine(control.renderer, (int)w1.x, (int)wy1_top, (int)w2.x, (int)wy2_top);       // Ceiling edge
-        SDL_RenderDrawLine(control.renderer, (int)w1.x, (int)wy1_bottom, (int)w1.x, (int)wy1_top);    // Left vertical
-        SDL_RenderDrawLine(control.renderer, (int)w2.x, (int)wy2_bottom, (int)w2.x, (int)wy2_top);    // Right vertical
-
-        if (control.walls.arr[i].portal != -1) {
-            next_sector = control.walls.arr[i].portal;
-        }
-    }
-    
-    if (next_sector != -1 && control.sectors.rendered[next_sector] != 1) {
-        render_sector(next_sector);
-    }
-}
 
 void draw_line(int x, int y_lo, int y_hi, uint32_t color) {
     for (int y = y_lo; y <= y_hi; y++) {
@@ -199,7 +142,7 @@ void draw_line(int x, int y_lo, int y_hi, uint32_t color) {
 }
 
 //attempt at filled walls, works poorly
-void render_sector2(int sect_id) {
+void render_sector(int sect_id) {
     if (sect_id < 0 || sect_id >= control.sectors.n || control.sectors.rendered[sect_id] == 1) {
         return;
     }
@@ -269,12 +212,12 @@ void render_sector2(int sect_id) {
     }
     
     if (next_sector != -1 && control.sectors.rendered[next_sector] != 1) {
-        render_sector2(next_sector);
+        render_sector(next_sector);
     }
 }
 
 
-void render_sector3(int sect_id) {
+void render_sector2(int sect_id) {
     if (sect_id < 0 || sect_id >= control.sectors.n || control.sectors.rendered[sect_id] == 1) {
         return;
     }
@@ -334,7 +277,7 @@ void render_sector3(int sect_id) {
                 int x_val = w1.x + x;
                 int bottom = wy1_bottom + (scale_floor * x);
                 int top = wy1_top + (scale_ceil * x);
-                if (x_val >= 0 && x_val <= SCREEN_WIDTH) {
+                if (x_val >= 0 && x_val <= SCREEN_WIDTH && wy1_top >= 0 && wy1_bottom < SCREEN_HEIGHT) {
                     draw_line(x_val, top, bottom, sect_color(sect_id));
                 }
             }
@@ -345,7 +288,7 @@ void render_sector3(int sect_id) {
     }
 
     if (next_sector != -1 && control.sectors.rendered[next_sector] != 1) {
-        render_sector3(next_sector);
+        render_sector2(next_sector);
     }
 
 }
@@ -357,9 +300,9 @@ void render() {
     memset(control.y_lo, 0, sizeof(int) * SCREEN_WIDTH);                            //clears low pixel drawn
     memset(control.sectors.rendered, 0, sizeof(int) * control.sectors.n);           //resets all sectors to not-rendered
 
-    render_sector3(pcam.sector);
+    render_sector2(pcam.sector);
 
-    //this is where rendering sprites and such comes in
+    //Render sprites and stuff here
 
     SDL_UpdateTexture(control.texture, NULL, control.pixels, SCREEN_WIDTH * sizeof(uint32_t));
 }
@@ -405,6 +348,7 @@ int init() {
     control.quit = 0;
     return 0;
 }
+
 
 void close() {
     if (control.sectors.arr)    free(control.sectors.arr);
