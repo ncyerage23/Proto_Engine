@@ -34,6 +34,8 @@
     the code with all my new knowledge. lol. I think I should start adding more abstraction to the files as well. Like,
     this file is pushing 500 lines of code, and it's mostly a mess. Maybe make the drawing stuff on a separate file, 
     and then have this one just deal with the game logic and that kind of thing? That's probably a good idea. 
+
+    It's super messed up for some reason. what the hell? 
 */
 
 #include <stdlib.h>
