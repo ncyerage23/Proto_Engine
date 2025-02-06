@@ -36,6 +36,8 @@
     and then have this one just deal with the game logic and that kind of thing? That's probably a good idea. 
 
     It's super messed up for some reason. what the hell? 
+
+    I think I need to start it all over again. Idk how though, lol. 
 */
 
 #include <stdlib.h>
@@ -43,6 +45,7 @@
 #include <SDL2/SDL.h>
 
 #include "sector_math.h"
+//#include "frame_buffer.h"
 
 #define SCREEN_WIDTH    1200
 #define SCREEN_HEIGHT   700
@@ -71,7 +74,6 @@ static struct {
     SDL_Texture * texture;
     uint32_t *pixels;
     int quit;
-
     
     struct { sector_t *arr; size_t n; int *rendered; } sectors;
     struct { wall_t *arr; size_t n; } walls;
