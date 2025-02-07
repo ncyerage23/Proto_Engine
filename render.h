@@ -6,6 +6,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include <string.h>
+
+#include "sector.h"
+#include "wall.h"
+#include "vector.h"
 
 #define BLUE                0xFFFF0000
 #define RED                 0xFF0000FF

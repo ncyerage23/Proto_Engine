@@ -2,7 +2,7 @@
 
 #include "vector.h"
 
-static inline v2 rotate_vect(v2 v, float a) {
+v2 rotate_vect(v2 v, float a) {
     return (v2){ (v.x * cos(a)) - (v.y * sin(a)), (v.x * sin(a) + v.y * cos(a)) };
 }
 
@@ -26,7 +26,7 @@ v2 vector_intersect( v2 v_1, v2 v_2, v2 v_3, v2 v_4 ) {
 //less, to the right
 //equal, it's on the line
 //maybe just return the value, no ifs. Yeah. 
-static inline int point_side( v2 p, v2 v_1, v2 v_2 ) {
+int point_side( v2 p, v2 v_1, v2 v_2 ) {
     float out = cross_vect( sub_vect(v_2, v_1), sub_vect(p, v_1) );
     return (out > 0) - (out < 0);
 }

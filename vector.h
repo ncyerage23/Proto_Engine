@@ -47,13 +47,13 @@ typedef struct {
 } v2;
 
 //rotates a vector by angle a
-static inline v2 rotate_vect(v2 v, float a);
+v2 rotate_vect(v2 v, float a);
 
 //checks if two vectors intersect and returns that vector
 v2 vector_intersect( v2 v_1, v2 v_2, v2 v_3, v2 v_4 );
 
 //checks what side p is on from the directed vector (v1 -> vect)
-static inline int point_side( v2 p, v2 v_1, v2 v_2 );
+int point_side( v2 p, v2 v_1, v2 v_2 );
 
 
 #endif

@@ -1,5 +1,5 @@
 //Starting file for Proto Engine
-//compile command btw: gcc main.c render.c sector.c wall.c vector.c -o poop -lSDL2
+//compile command btw: gcc main.c render.c vector.c wall.c sector.c -o poop -lSDL2
 //can't do this ^ until I actually make c files lol
 
 /* The Plan:
@@ -118,7 +118,7 @@ int read_file(const char* path) {
 
         if (sscanf(line, "SECT %d", &sect_count) == 1) {
             control.sectors.arr = (sector_t*)malloc( sizeof(sector_t) * wall_count );
-            if (!&control.sectors) { fclose(f); close(); return 1; }
+            if (!control.sectors.arr) { fclose(f); close(); return 1; }
 
             for (int i = 0; i < sect_count; i++) {
                 if (!fgets(line, sizeof(line), f)) break;
@@ -131,7 +131,7 @@ int read_file(const char* path) {
 
         if (sscanf(line, "WALL %d", &wall_count) == 1) {
             control.walls.arr = (wall_t*)malloc( sizeof(wall_t) * wall_count );
-            if (!&control.walls) { fclose(f); close(); return 1; }
+            if (!control.walls.arr) { fclose(f); close(); return 1; }
 
             for (int j = 0; j < wall_count; j++) {
                 if (!fgets(line, sizeof(line), f)) break;

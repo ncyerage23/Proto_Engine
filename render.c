@@ -2,7 +2,7 @@
 
 #include "render.h"
 
-frame_t* frame_create(int width, int height) {
+frame_t* frame_create(int width, int height, int num_sectors, int num_walls, camera_t* cam) {
     frame_t* out = (frame_t*)malloc( sizeof(frame_t) );
     if (!out) return NULL;
 
@@ -17,10 +17,16 @@ frame_t* frame_create(int width, int height) {
 
     out->y_hi = (int*)malloc( sizeof(int) * width );
     out->y_lo = (int*)malloc( sizeof(int) * width );
+    out->sectors.rendered = (int*)malloc( sizeof(int) * width);
 
     memset(out->y_hi, 0, width * sizeof(int));
     memset(out->y_lo, 0, width * sizeof(int));
     memset(out->pixels, BLACK, sizeof(uint32_t) * width * height * 4);
+    memset(out->sectors.rendered, 0, sizeof(int) * width);
+
+    out->cam = cam;
+    out->sectors.n = num_sectors;
+    out->walls.n = num_walls;
 
     return out;
 }
