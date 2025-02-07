@@ -7,6 +7,9 @@
 
     So, I guess, figure out vector first, then sector and wall. Basically
     just get all the errors out of main.c, then get to work on render.  
+
+    Good plan, good plan. Though maybe I should make sure the file reading
+    works first? it probably does, idk. 
 */
 
 
