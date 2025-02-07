@@ -3,20 +3,13 @@
 //can't do this ^ until I actually make c files lol
 
 /* The Plan:
-    So, I'm starting from scratch! Yay! We'll see how well it goes, lol. 
-    Idk what to do from here. Lol. I gotta read through my old stuff. 
+    Alright, well I copied over all of my old stuff & things, which is nice. 
+    Unfortunately, they don't seem to like me very much. Well, here's the new plan. 
 
-    So, I guess, figure out vector first, then sector and wall. Basically
-    just get all the errors out of main.c, then get to work on render.  
+    Let's rework main and render until I can just get a stable window going. From there, 
+    idk. Start tryna draw some lines and shit. Later, we can try out the weird stuff. 
 
-    Good plan, good plan. Though maybe I should make sure the file reading
-    works first? it probably does, idk. 
-
-    This could be better, or it could be like way worse. Who mfin knows. 
-    I really don't like the list structs, it's weird. 
-
-    looking good rn, better than at first I think. Let's get it up and running
-    pretty soon. Idk. it feels alright. Get it up and running this weekend ig.
+    HEY! IT WORKED! Lol. It does work, but I jumped the gun a little lol. 
 */
 
 
@@ -44,7 +37,7 @@ static struct {
     SDL_Texture* texture;
     int quit;
 
-    struct { sector_t* arr; int n; } sectors;
+    struct { sector_t* arr; int n; int* rendered; } sectors;
     struct { wall_t* arr; int n; } walls;
 
     frame_t* fr;
@@ -104,7 +97,6 @@ void close() {
 }
 
 int read_file(const char* path) {
-
     FILE* f = fopen(path, "r");
     if (!f) { close(); return 1; }
 
@@ -116,6 +108,7 @@ int read_file(const char* path) {
 
         if (sscanf(line, "SECT %d", &sect_count) == 1) {
             control.sectors.arr = (sector_t*)malloc( sizeof(sector_t) * sect_count );
+            control.sectors.rendered = (int*)malloc( sizeof(int) * SCREEN_WIDTH );
             if (!control.sectors.arr) { fclose(f); close(); return 1; }
 
             for (int i = 0; i < sect_count; i++) {
@@ -192,7 +185,7 @@ int main() {
 
         render(control.fr);
 
-        SDL_UpdateTexture(control.texture, NULL, control.fr->pixels, SCREEN_WIDTH * sizeof(uint32_t));
+        SDL_UpdateTexture(control.texture, NULL, control.fr->pixels, control.fr->width * sizeof(uint32_t));
         SDL_RenderCopy(control.renderer, control.texture, NULL, NULL);
         SDL_RenderPresent(control.renderer);
 

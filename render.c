@@ -64,6 +64,6 @@ void draw_line(frame_t* fr, int x, int top, int bottom, uint32_t color) {
 
 void render(frame_t* fr) {
     reset_stuff(fr);
-    //draw_line(fr, 20, 10, 400, BLUE);
+    draw_line(fr, 20, 10, 400, BLUE);
 
 }
