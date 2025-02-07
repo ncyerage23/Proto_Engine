@@ -2,6 +2,7 @@
     "files.associations": {
         "sdl.h": "c",
         "queue": "cpp",
-        "stack": "cpp"
+        "stack": "cpp",
+        "__locale": "c"
     }
 }
