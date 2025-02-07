@@ -88,8 +88,6 @@ int init() {
         SDL_Quit();
         return 1;
     }
-
-    
     
     control.quit = 0;
     return 0;
@@ -126,7 +124,7 @@ int read_file(const char* path) {
                 sector_t* sect = &control.sectors.arr[i];
                 sscanf(line, "%d %d %d %f %f", &sect->id, &sect->first_wall, &sect->num_walls, &sect->zfloor, &sect->zceil);
             }
-            //control.sectors.n = sect_count;
+            control.sectors.n = sect_count;
         }
 
         if (sscanf(line, "WALL %d", &wall_count) == 1) {
@@ -139,16 +137,22 @@ int read_file(const char* path) {
                 wall_t* wall = &control.walls.arr[j];
                 sscanf(line, "%f %f %f %f %d", &wall->p1.x, &wall->p1.y, &wall->p2.x, &wall->p2.y, &wall->portal);
             }
-            //control.walls.n = wall_count;
+            control.walls.n = wall_count;
         }
 
         if (strncmp(line, "CAM", 3) == 0) {
             if (!fgets(line, sizeof(line), f)) break;
             //(px, py, zpos, angle, sector)
+            control.cam = (camera_t*)malloc(sizeof(camera_t));
             sscanf(line, "%f %f %f %d", &control.cam->pos.x, &control.cam->pos.y, &control.cam->zpos, &control.cam->sector);
         }
 
     }
+
+    //creating renderer
+    control.fr = frame_create(SCREEN_WIDTH, SCREEN_HEIGHT, sect_count, wall_count, control.cam);
+    control.fr->sectors = &control.sectors;
+    control.fr->walls = &control.walls;
 
     fclose(f);
     return 0;
