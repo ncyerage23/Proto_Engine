@@ -15,7 +15,7 @@
 
 
 typedef struct {
-    vector_t pos;
+    v2 pos;
     float zpos;
     float angle;
     int sector;

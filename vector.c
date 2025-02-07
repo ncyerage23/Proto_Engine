@@ -7,7 +7,7 @@ static inline v2 rotate_vect(v2 v, float a) {
 }
 
 
-static inline v2 vector_intersect( v2 v_1, v2 v_2, v2 v_3, v2 v_4 ) {
+v2 vector_intersect( v2 v_1, v2 v_2, v2 v_3, v2 v_4 ) {
     const float den = (v_1.x - v_2.x) * (v_3.y - v_4.y) - (v_1.y - v_2.y) * (v_3.x - v_4.x);
     if (den <= 0.0) { return NV; } 
 

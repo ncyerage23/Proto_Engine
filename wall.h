@@ -5,11 +5,14 @@
 
 #include "vector.h"
 
-//should I add wall id? nah.
+#define wall_intersect(w1, w2)      ( vector_intersect( w1.p1, w1.p2, w2.p1, w2.p2 ) )
+
 typedef struct {
-    vector_t p1, p2;
+    v2 p1, p2;
     int portal;
 } wall_t;
+
+
 
 
 
