@@ -10,6 +10,9 @@
 
     Good plan, good plan. Though maybe I should make sure the file reading
     works first? it probably does, idk. 
+
+    This could be better, or it could be like way worse. Who mfin knows. 
+    I really don't like the list structs, it's weird. 
 */
 
 
@@ -37,16 +40,11 @@ static struct {
     SDL_Texture* texture;
     int quit;
 
-    sector_list* sectors;
-    wall_list* walls;
-    frame_t* fr;
+    struct { sector_t* arr; int n; } sectors;
+    struct { wall_t* arr; int n; } walls;
 
-    struct {
-        vector_t pos;
-        float zpos;
-        float angle;
-        int sector;
-    } camera;
+    frame_t* fr;
+    camera_t* cam;
 
 } control;
 
@@ -94,9 +92,9 @@ int init() {
 }
 
 void close() {
-    if (control.sectors)        free(control.sectors);
-    if (control.walls)          free(control.walls);
-    if (control.fr)             free(control.fr);
+    if (control.sectors.arr)        free(control.sectors.arr);
+    if (control.walls.arr)          free(control.walls.arr);
+    if (control.fr)                 frame_destroy(control.fr);
     if (control.texture)        SDL_DestroyTexture(control.texture);
     if (control.renderer)       SDL_DestroyRenderer(control.renderer);
     if (control.window)         SDL_DestroyWindow(control.window);
@@ -115,26 +113,26 @@ int read_file(const char* path) {
         if (line[0] == '#' || line[0] == '\n') continue; 
 
         if (sscanf(line, "SECT %d", &sect_count) == 1) {
-            control.sectors = sectList_create(sect_count);
+            control.sectors.arr = (sector_t*)malloc( sizeof(sector_t) * wall_count );
             if (!&control.sectors) { fclose(f); close(); return 1; }
 
             for (int i = 0; i < sect_count; i++) {
                 if (!fgets(line, sizeof(line), f)) break;
                 //(id, start_wall, num_walls, zfloor, zceil)
-                sector_t* sect = &control.sectors->arr[i];
+                sector_t* sect = &control.sectors.arr[i];
                 sscanf(line, "%d %d %d %f %f", &sect->id, &sect->first_wall, &sect->num_walls, &sect->zfloor, &sect->zceil);
             }
             //control.sectors.n = sect_count;
         }
 
         if (sscanf(line, "WALL %d", &wall_count) == 1) {
-            control.walls = wallList_create(wall_count);
+            control.walls.arr = (wall_t*)malloc( sizeof(wall_t) * wall_count );
             if (!&control.walls) { fclose(f); close(); return 1; }
 
             for (int j = 0; j < wall_count; j++) {
                 if (!fgets(line, sizeof(line), f)) break;
                 //(id, p1x, p1y, p2x, p2y, portal)
-                wall_t* wall = &control.walls->arr[j];
+                wall_t* wall = &control.walls.arr[j];
                 sscanf(line, "%f %f %f %f %d", &wall->p1.x, &wall->p1.y, &wall->p2.x, &wall->p2.y, &wall->portal);
             }
             //control.walls.n = wall_count;
@@ -143,7 +141,7 @@ int read_file(const char* path) {
         if (strncmp(line, "CAM", 3) == 0) {
             if (!fgets(line, sizeof(line), f)) break;
             //(px, py, zpos, angle, sector)
-            sscanf(line, "%f %f %f %d", &control.camera.pos.x, &control.camera.pos.y, &control.camera.zpos, &control.camera.sector);
+            sscanf(line, "%f %f %f %d", &control.cam->pos.x, &control.cam->pos.y, &control.cam->zpos, &control.cam->sector);
         }
 
     }

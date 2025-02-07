@@ -13,11 +13,24 @@
 #define WHITE               0xFFFFFFFF
 #define BLACK               0xFF000000
 
+
+typedef struct {
+    vector_t pos;
+    float zpos;
+    float angle;
+    int sector;
+} camera_t;
+
+
 typedef struct {
     int width, height;
     uint32_t* pixels;
     int* y_hi;
     int* y_lo;
+    camera_t* cam;
+
+    struct { sector_t* arr; int n; int* rendered; } sectors;
+    struct { wall_t* arr; int n; } walls;
 } frame_t;
 
 frame_t* frame_create(int width, int height);

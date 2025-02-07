@@ -13,14 +13,6 @@ typedef struct {
 
 
 
-typedef struct {
-    wall_t* arr;
-    int n;
-    int* rendered;
-} wall_list;
-
-wall_list* wallList_create(int wall_count);
-void wallList_destroy(wall_list* list);
 
 
 #endif
