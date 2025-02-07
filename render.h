@@ -39,9 +39,11 @@ typedef struct {
 } frame_t;
 
 //remember, should probably put threads and mutexes all up in here, since a bunch of vars are being shared. later tho.
-frame_t* frame_create(int width, int height, int num_sectors, int num_walls, camera_t* cam);
+frame_t* frame_create(int width, int height, void* sectors, void* walls, camera_t* cam);
 void frame_destroy(frame_t* fr);
 
-
+void reset_stuff(frame_t* fr);
+void draw_line(frame_t* fr, int x, int top, int bottom, uint32_t color);
+void render(frame_t* fr);
 
 #endif

@@ -115,7 +115,7 @@ int read_file(const char* path) {
         if (line[0] == '#' || line[0] == '\n') continue; 
 
         if (sscanf(line, "SECT %d", &sect_count) == 1) {
-            control.sectors.arr = (sector_t*)malloc( sizeof(sector_t) * wall_count );
+            control.sectors.arr = (sector_t*)malloc( sizeof(sector_t) * sect_count );
             if (!control.sectors.arr) { fclose(f); close(); return 1; }
 
             for (int i = 0; i < sect_count; i++) {
@@ -150,9 +150,11 @@ int read_file(const char* path) {
     }
 
     //creating renderer
-    control.fr = frame_create(SCREEN_WIDTH, SCREEN_HEIGHT, sect_count, wall_count, control.cam);
-    control.fr->sectors = &control.sectors;
-    control.fr->walls = &control.walls;
+    control.fr = frame_create(SCREEN_WIDTH, SCREEN_HEIGHT, &control.sectors, &control.walls, control.cam);
+    if (!control.fr) {
+        printf("yo, sum went wrong\n");
+        return 1;
+    }
 
     fclose(f);
     return 0;
@@ -177,34 +179,33 @@ int main() {
     int totalFrames = 0;
     int totalTime = 0;
     
-    // SDL_Event e;
-    // while (0) {
+    SDL_Event e;
+    while (!control.quit) {
 
-    //     while (SDL_PollEvent(&e) != 0) {
-    //         if (e.type == SDL_QUIT) {
-    //             control.quit = 1;
-    //         }
-    //     }
+        while (SDL_PollEvent(&e) != 0) {
+            if (e.type == SDL_QUIT) {
+                control.quit = 1;
+            }
+        }
 
-    //     const Uint8 *keystate = SDL_GetKeyboardState(NULL);
+        //const Uint8 *keystate = SDL_GetKeyboardState(NULL);
 
+        render(control.fr);
 
+        SDL_UpdateTexture(control.texture, NULL, control.fr->pixels, SCREEN_WIDTH * sizeof(uint32_t));
+        SDL_RenderCopy(control.renderer, control.texture, NULL, NULL);
+        SDL_RenderPresent(control.renderer);
 
-
-        
-    //     SDL_RenderCopy(control.renderer, control.texture, NULL, NULL);
-    //     SDL_RenderPresent(control.renderer);
-
-    //     frames++;
-    //     int currentTime = SDL_GetTicks();
-    //     if (currentTime - lastTime >= 1000) {
-    //         fps = frames;
-    //         totalFrames += frames;
-    //         totalTime += (currentTime - lastTime);
-    //         frames = 0;
-    //         lastTime = currentTime;
-    //     }
-    // }
+        frames++;
+        int currentTime = SDL_GetTicks();
+        if (currentTime - lastTime >= 1000) {
+            fps = frames;
+            totalFrames += frames;
+            totalTime += (currentTime - lastTime);
+            frames = 0;
+            lastTime = currentTime;
+        }
+    }
 
     if (totalTime > 0) {
         float avgFps = (totalFrames * 1000.0) / totalTime;
