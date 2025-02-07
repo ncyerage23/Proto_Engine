@@ -33,6 +33,7 @@ typedef struct {
     struct { wall_t* arr; int n; } walls;
 } frame_t;
 
+//remember, should probably put threads and mutexes all up in here, since a bunch of vars are being shared. later tho.
 frame_t* frame_create(int width, int height, int num_sectors, int num_walls, camera_t* cam);
 void frame_destroy(frame_t* fr);
 

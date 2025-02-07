@@ -1,5 +1,6 @@
 //Starting file for Proto Engine
 //compile command btw: gcc main.c render.c sector.c wall.c vector.c -o poop -lSDL2
+//can't do this ^ until I actually make c files lol
 
 /* The Plan:
     So, I'm starting from scratch! Yay! We'll see how well it goes, lol. 
@@ -13,6 +14,9 @@
 
     This could be better, or it could be like way worse. Who mfin knows. 
     I really don't like the list structs, it's weird. 
+
+    looking good rn, better than at first I think. Let's get it up and running
+    pretty soon. Idk. it feels alright. Get it up and running this weekend ig.
 */
 
 
@@ -169,34 +173,34 @@ int main() {
     int totalFrames = 0;
     int totalTime = 0;
     
-    SDL_Event e;
-    while (0) {
+    // SDL_Event e;
+    // while (0) {
 
-        while (SDL_PollEvent(&e) != 0) {
-            if (e.type == SDL_QUIT) {
-                control.quit = 1;
-            }
-        }
+    //     while (SDL_PollEvent(&e) != 0) {
+    //         if (e.type == SDL_QUIT) {
+    //             control.quit = 1;
+    //         }
+    //     }
 
-        const Uint8 *keystate = SDL_GetKeyboardState(NULL);
+    //     const Uint8 *keystate = SDL_GetKeyboardState(NULL);
 
 
 
 
         
-        SDL_RenderCopy(control.renderer, control.texture, NULL, NULL);
-        SDL_RenderPresent(control.renderer);
+    //     SDL_RenderCopy(control.renderer, control.texture, NULL, NULL);
+    //     SDL_RenderPresent(control.renderer);
 
-        frames++;
-        int currentTime = SDL_GetTicks();
-        if (currentTime - lastTime >= 1000) {
-            fps = frames;
-            totalFrames += frames;
-            totalTime += (currentTime - lastTime);
-            frames = 0;
-            lastTime = currentTime;
-        }
-    }
+    //     frames++;
+    //     int currentTime = SDL_GetTicks();
+    //     if (currentTime - lastTime >= 1000) {
+    //         fps = frames;
+    //         totalFrames += frames;
+    //         totalTime += (currentTime - lastTime);
+    //         frames = 0;
+    //         lastTime = currentTime;
+    //     }
+    // }
 
     if (totalTime > 0) {
         float avgFps = (totalFrames * 1000.0) / totalTime;
