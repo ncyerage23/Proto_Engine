@@ -121,31 +121,9 @@ void render_sector(frame_t* fr, int sect_id) {
         float wy1_top = wz1_ceil * inv_wy1 + hh;
         float wy2_top = wz2_ceil * inv_wy2 + hh;
 
-        //if wall->portal == -1 (do this later)
-
-        //this stuff is wrong rn, do it later
-        v2 floor = normal_vect( ( (v2){w2.x - w1.x, wy2_bottom - wy1_bottom} ) );
-        v2 ceil = normal_vect( ( (v2){w2.x - w1.x, wy2_top - wy1_top} ) );
-
-        //scale for finding top and bottom coords of line
-        float scale_floor = (floor.y / floor.x);
-        float scale_ceil = (ceil.y / ceil.x);
-
-        //finds top and bottom of each vertical line (and x), then calls draw function
-        for (int x = 0; x <= w2.x - w1.x; x++) {
-            int x_val = w1.x + x;
-            int bottom = wy1_bottom + (scale_floor * x);
-            int top = wy1_top + (scale_ceil * x);
-
-            if (x_val >= 0 || x_val < SCREEN_WIDTH) {
-                if (top < fr->y_hi[x_val] && bottom > fr->y_lo[x_val]) {
-                    draw_line(fr, x_val, top, bottom, RED);
-                }
-            }
-        }
+        draw_line(fr, w1.x, wy1_top, wy1_bottom, RED);
+        draw_line(fr, w2.x, wy2_top, wy2_bottom, RED);
     }
-
-
 
 }
 

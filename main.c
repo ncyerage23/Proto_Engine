@@ -27,8 +27,10 @@
 #define SCREEN_HEIGHT   700
 #define FOV_SCALE       600
 
-#define MOVE_SPEED          5.0
-#define ROT_SPEED           0.05
+#define pcam    control.cam
+
+#define MOVE_SPEED  5.0
+#define ROT_SPEED   0.05
 
 
 static struct {
@@ -45,6 +47,23 @@ static struct {
 
 } control;
 
+
+void handle_keys(const Uint8 *keystate) {
+    float dx = sin(control.cam->angle) * 2.5, dy = cos(control.cam->angle) * 2.5;
+
+    float posx = control.cam->pos.x, posy = control.cam->pos.y;
+
+    if (keystate[SDL_SCANCODE_W]) { posx += dx; posy += dy; }
+    if (keystate[SDL_SCANCODE_S]) { posx -= dx; posy -= dy; }
+    if (keystate[SDL_SCANCODE_A]) { posx -= dy; posy += dx; }
+    if (keystate[SDL_SCANCODE_D]) { posx += dy; posy -= dx; }
+
+    if (keystate[SDL_SCANCODE_LEFT]) { pcam->angle -= 0.03; }
+    if (keystate[SDL_SCANCODE_RIGHT]) { pcam->angle += 0.03; }
+
+    if (keystate[SDL_SCANCODE_SPACE]) pcam->zpos += 1.0;
+    if (keystate[SDL_SCANCODE_LSHIFT] || keystate[SDL_SCANCODE_RSHIFT] ) pcam->zpos -= 1.0;
+}
 
 
 int init() {
