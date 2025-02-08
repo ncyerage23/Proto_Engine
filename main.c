@@ -208,7 +208,23 @@ int main() {
 
         render(control.fr);
 
-        SDL_UpdateTexture(control.texture, NULL, control.fr->pixels, control.fr->width * sizeof(uint32_t));
+        //I'm doing something sorta new here, idk what exactly. It's faster
+        //than what I've been doing and doesn't seem to be crashing so far.
+        //I do think there's more optimization I can do as well. 
+        void *pixels;
+        int pitch;
+        SDL_LockTexture(control.texture, NULL, &pixels, &pitch);
+
+        // Copy framebuffer to texture while respecting pitch
+        uint32_t *buffer = (uint32_t *)pixels;
+        for (int y = 0; y < control.fr->height; y++) {
+            for (int x = 0; x < control.fr->width; x++) {
+                buffer[y * (pitch / sizeof(uint32_t)) + x] = control.fr->pixels[y * control.fr->width + x];
+            }
+        }
+
+        SDL_UnlockTexture(control.texture);
+        
         SDL_RenderCopy(control.renderer, control.texture, NULL, NULL);
         SDL_RenderPresent(control.renderer);
 

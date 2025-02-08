@@ -5,8 +5,11 @@
 //So, I got it to draw. Now, I need to figure out what's making it crash. that's all. 
 //I wasn't handling keys and stuff, lol. Good looking. 
 //I don't know what the issue is, but we'll get there. 
+//idk what's happening anymore, but it's sort of getting somewhere??? Who mfin knows.
+//I think I just actually learn everything about what I'm doing
+//this sucks
 
-
+#define MAX_PORTALS     5
 #define SCREEN_HEIGHT   fr->height
 #define SCREEN_WIDTH    fr->width
 #define pcam            fr->cam
@@ -61,7 +64,7 @@ void reset_stuff(frame_t* fr) {
 }
 
 void draw_line(frame_t* fr, int x, int top, int bottom, uint32_t color) {
-    if (x < 0 || x >= fr->width) return;
+    if (x < 0 || x >= SCREEN_WIDTH) return;
 
     if (top < 0) top = 0;
     if (bottom >= SCREEN_HEIGHT) bottom = SCREEN_HEIGHT;
@@ -87,7 +90,8 @@ void render_sector(frame_t* fr, int sect_id) {
     fr->sectors->rendered[sect_id] = 1;
     sector_t* sect = &fr->sectors->arr[sect_id];
 
-    //struct { int arr[sect->num_walls]; int n } portals;
+    struct { int arr[MAX_PORTALS]; int n; } portals;
+    portals.n = 0;
     int hh = (SCREEN_HEIGHT/2), hw = (SCREEN_WIDTH/2);
 
     float wz1_floor = pcam->zpos - sect->zfloor;
@@ -120,19 +124,30 @@ void render_sector(frame_t* fr, int sect_id) {
         float wy1_top = wz1_ceil * inv_wy1 + hh;
         float wy2_top = wz2_ceil * inv_wy2 + hh;
 
-        v2 floor = normal_vect( ( (v2){w2.x - w1.x, wy2_bottom - wy1_bottom} ) );
-        v2 ceil = normal_vect( ( (v2){w2.x - w1.x, wy2_top - wy1_top} ) );
+        if (wall->portal == -1) {
+            v2 floor = normal_vect( ( (v2){w2.x - w1.x, wy2_bottom - wy1_bottom} ) );
+            v2 ceil = normal_vect( ( (v2){w2.x - w1.x, wy2_top - wy1_top} ) );
 
-        //scale for finding top and bottom coords of line
-        float scale_floor = (floor.y / floor.x);
-        float scale_ceil = (ceil.y / ceil.x);
+            //scale for finding top and bottom coords of line
+            float scale_floor = (floor.y / floor.x);
+            float scale_ceil = (ceil.y / ceil.x);
 
-        for( int x = 0; x < w2.x - w1.x; x += 1 ) {
-            int x_val = w1.x + x;
-            int bottom = wy1_bottom + (scale_floor * x);
-            int top = wy1_top + (scale_ceil * x);
+            for( int x = 0; x < w2.x - w1.x; x += 1 ) {
+                int x_val = w1.x + x;
+                int bottom = wy1_bottom + (scale_floor * x);
+                int top = wy1_top + (scale_ceil * x);
 
-            draw_line(fr, x_val, top, bottom, RED);
+                draw_line(fr, x_val, top, bottom, RED);
+            }
+        } else {
+            portals.arr[portals.n] = wall->portal;
+            portals.n++;
+        }
+    }
+
+    if (portals.n != 0) {
+        for (int i = 0; i < portals.n; i++) {
+            render_sector(fr, portals.arr[i]);
         }
     }
 
