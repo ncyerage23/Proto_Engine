@@ -50,7 +50,6 @@ static struct {
 
 void handle_keys(const Uint8 *keystate) {
     float dx = sin(control.cam->angle) * 2.5, dy = cos(control.cam->angle) * 2.5;
-
     float posx = control.cam->pos.x, posy = control.cam->pos.y;
 
     if (keystate[SDL_SCANCODE_W]) { posx += dx; posy += dy; }
@@ -58,11 +57,15 @@ void handle_keys(const Uint8 *keystate) {
     if (keystate[SDL_SCANCODE_A]) { posx -= dy; posy += dx; }
     if (keystate[SDL_SCANCODE_D]) { posx += dy; posy -= dx; }
 
+    control.cam->pos = (v2){posx, posy};
+
     if (keystate[SDL_SCANCODE_LEFT]) { pcam->angle -= 0.03; }
     if (keystate[SDL_SCANCODE_RIGHT]) { pcam->angle += 0.03; }
 
     if (keystate[SDL_SCANCODE_SPACE]) pcam->zpos += 1.0;
     if (keystate[SDL_SCANCODE_LSHIFT] || keystate[SDL_SCANCODE_RSHIFT] ) pcam->zpos -= 1.0;
+
+
 }
 
 
@@ -200,7 +203,8 @@ int main() {
             }
         }
 
-        //const Uint8 *keystate = SDL_GetKeyboardState(NULL);
+        const Uint8 *keystate = SDL_GetKeyboardState(NULL);
+        handle_keys(keystate);
 
         render(control.fr);
 

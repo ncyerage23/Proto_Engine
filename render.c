@@ -2,10 +2,9 @@
 
 #include "render.h"
 
-
-//so, now all I gotta do is like. The other stuff. I really don't feel like it thoooooo
-//idk later then. Shouldn't be like, too too bad. 
-//copy the clipping stuff from the jdh thingy maybe
+//So, I got it to draw. Now, I need to figure out what's making it crash. that's all. 
+//I wasn't handling keys and stuff, lol. Good looking. 
+//I don't know what the issue is, but we'll get there. 
 
 
 #define SCREEN_HEIGHT   fr->height
@@ -121,8 +120,20 @@ void render_sector(frame_t* fr, int sect_id) {
         float wy1_top = wz1_ceil * inv_wy1 + hh;
         float wy2_top = wz2_ceil * inv_wy2 + hh;
 
-        draw_line(fr, w1.x, wy1_top, wy1_bottom, RED);
-        draw_line(fr, w2.x, wy2_top, wy2_bottom, RED);
+        v2 floor = normal_vect( ( (v2){w2.x - w1.x, wy2_bottom - wy1_bottom} ) );
+        v2 ceil = normal_vect( ( (v2){w2.x - w1.x, wy2_top - wy1_top} ) );
+
+        //scale for finding top and bottom coords of line
+        float scale_floor = (floor.y / floor.x);
+        float scale_ceil = (ceil.y / ceil.x);
+
+        for( int x = 0; x < w2.x - w1.x; x += 1 ) {
+            int x_val = w1.x + x;
+            int bottom = wy1_bottom + (scale_floor * x);
+            int top = wy1_top + (scale_ceil * x);
+
+            draw_line(fr, x_val, top, bottom, RED);
+        }
     }
 
 }
