@@ -22,11 +22,11 @@ frame_t* frame_create(int width, int height, void* sectors, void* walls, camera_
     out->width = width;
     out->height = height;
 
-    out->pixels = (uint32_t*)malloc( sizeof(uint32_t) * width * height * 4);
-    if (!out->pixels) {
-        free(out);
-        return NULL;
-    }
+    // out->pixels = (uint32_t*)malloc( sizeof(uint32_t) * width * height);
+    // if (!out->pixels) {
+    //     free(out);
+    //     return NULL;
+    // }
 
     out->y_hi = (int*)malloc( sizeof(int) * width );
     out->y_lo = (int*)malloc( sizeof(int) * width );
@@ -37,7 +37,7 @@ frame_t* frame_create(int width, int height, void* sectors, void* walls, camera_
 
     memset(out->y_hi, 0, width * sizeof(int));
     memset(out->y_lo, 0, width * sizeof(int));
-    memset(out->pixels, BLACK, sizeof(uint32_t) * width * height * 4);
+    //memset(out->pixels, BLACK, sizeof(uint32_t) * width * height * 4);
 
     out->cam = cam;
     out->sectors = sectors;
@@ -49,32 +49,30 @@ frame_t* frame_create(int width, int height, void* sectors, void* walls, camera_
 
 void frame_destroy(frame_t* fr) {
     if (!fr) return;
-    if (fr->pixels) free(fr->pixels);
+    //if (fr->pixels) free(fr->pixels);
     if (fr->y_hi) free(fr->y_hi);
     if (fr->y_lo) free(fr->y_lo);
     free(fr);
 }
 
 
-void reset_stuff(frame_t* fr) {
+void reset_stuff(frame_t* fr, uint32_t* pixels) {
     memset(fr->y_hi, 0, fr->width * sizeof(int));
     memset(fr->y_lo, 0, fr->width * sizeof(int));
-    memset(fr->pixels, BLACK, sizeof(uint32_t) * fr->width * fr->height * 4);
+    memset(pixels, BLACK, sizeof(uint32_t) * fr->width * fr->height);
     memset(fr->sectors->rendered, 0, sizeof(int) * fr->width);
 }
 
-void draw_line(frame_t* fr, int x, int top, int bottom, uint32_t color) {
+void draw_line(frame_t* fr, uint32_t* pixels, int x, int top, int bottom, uint32_t color) {
     if (x < 0 || x >= SCREEN_WIDTH) return;
 
     if (top < 0) top = 0;
     if (bottom >= SCREEN_HEIGHT) bottom = SCREEN_HEIGHT;
 
-    for (int y = top; y <= bottom; y++) { fr->pixels[y * fr->width + x] = color; }
+    for (int y = top; y <= bottom; y++) { pixels[y * fr->width + x] = color; }
 }
 
-
 static inline v2 wpos_to_cam(frame_t* fr, v2 p) {
-    //const v2 u = { p.x - fr.cam->pos->x, p.y - pcam->pos->y };
     const v2 u = sub_vect( p, pcam->pos );
     return (v2) {
         u.x * cos(pcam->angle) - u.y * sin(pcam->angle),
@@ -82,9 +80,7 @@ static inline v2 wpos_to_cam(frame_t* fr, v2 p) {
     };
 }
 
-//don't work. idk why. probably all of its dumb. gonna have to rewrite the whole thing ig. Idk. 
-//really don't feel like it tho. 
-void render_sector(frame_t* fr, int sect_id) {
+void render_sector(frame_t* fr, uint32_t* pixels, int sect_id) {
     if (sect_id < 0 || sect_id >= fr->sectors->n || fr->sectors->rendered[sect_id] == 1) return;
     
     fr->sectors->rendered[sect_id] = 1;
@@ -137,7 +133,7 @@ void render_sector(frame_t* fr, int sect_id) {
                 int bottom = wy1_bottom + (scale_floor * x);
                 int top = wy1_top + (scale_ceil * x);
 
-                draw_line(fr, x_val, top, bottom, RED);
+                draw_line(fr, pixels, x_val, top, bottom, RED);
             }
         } else {
             portals.arr[portals.n] = wall->portal;
@@ -147,14 +143,15 @@ void render_sector(frame_t* fr, int sect_id) {
 
     if (portals.n != 0) {
         for (int i = 0; i < portals.n; i++) {
-            render_sector(fr, portals.arr[i]);
+            render_sector(fr, pixels, portals.arr[i]);
         }
     }
 
 }
 
-void render(frame_t* fr) {
-    reset_stuff(fr);
+
+void render(frame_t* fr, uint32_t* pixels) {
+    reset_stuff(fr, pixels);
     
-    render_sector(fr, 0);
+    render_sector(fr, pixels, fr->cam->sector);
 }

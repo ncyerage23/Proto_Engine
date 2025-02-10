@@ -206,22 +206,13 @@ int main() {
         const Uint8 *keystate = SDL_GetKeyboardState(NULL);
         handle_keys(keystate);
 
-        render(control.fr);
 
-        //I'm doing something sorta new here, idk what exactly. It's faster
-        //than what I've been doing and doesn't seem to be crashing so far.
-        //I do think there's more optimization I can do as well. 
         void *pixels;
         int pitch;
         SDL_LockTexture(control.texture, NULL, &pixels, &pitch);
 
-        // Copy framebuffer to texture while respecting pitch
-        uint32_t *buffer = (uint32_t *)pixels;
-        for (int y = 0; y < control.fr->height; y++) {
-            for (int x = 0; x < control.fr->width; x++) {
-                buffer[y * (pitch / sizeof(uint32_t)) + x] = control.fr->pixels[y * control.fr->width + x];
-            }
-        }
+        uint32_t* buffer = (uint32_t*)pixels;
+        render(control.fr, buffer);
 
         SDL_UnlockTexture(control.texture);
         
