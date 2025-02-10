@@ -2,12 +2,12 @@
 
 #include "render.h"
 
-//So, I got it to draw. Now, I need to figure out what's making it crash. that's all. 
-//I wasn't handling keys and stuff, lol. Good looking. 
-//I don't know what the issue is, but we'll get there. 
-//idk what's happening anymore, but it's sort of getting somewhere??? Who mfin knows.
-//I think I just actually learn everything about what I'm doing
-//this sucks
+//Here's the plan, I guess. First, let's figure out an optimal way to do all this
+//pixel buffering stuff with the lock texture. Just so things are a little better organized. 
+//Then, lets start figuring out the drawing. Simply at first, then we can build up from there.
+//make sure everything works correctly before we move forward. 
+//keep doing that work (and reading up on it) until I have something that doesn't crash lol. 
+//then figure out floors/ceilings, and build the good editor. Idk. It's really just gonna be the first part for a while.
 
 #define MAX_PORTALS     5
 #define SCREEN_HEIGHT   fr->height
