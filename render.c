@@ -15,18 +15,13 @@
 #define pcam            fr->cam
 #define FOV_SCALE       600         //change this l8r, idk
 
+
 frame_t* frame_create(int width, int height, void* sectors, void* walls, camera_t* cam) {
     frame_t* out = (frame_t*)malloc( sizeof(frame_t) );
     if (!out) return NULL;
 
     out->width = width;
     out->height = height;
-
-    // out->pixels = (uint32_t*)malloc( sizeof(uint32_t) * width * height);
-    // if (!out->pixels) {
-    //     free(out);
-    //     return NULL;
-    // }
 
     out->y_hi = (int*)malloc( sizeof(int) * width );
     out->y_lo = (int*)malloc( sizeof(int) * width );
@@ -37,7 +32,6 @@ frame_t* frame_create(int width, int height, void* sectors, void* walls, camera_
 
     memset(out->y_hi, 0, width * sizeof(int));
     memset(out->y_lo, 0, width * sizeof(int));
-    //memset(out->pixels, BLACK, sizeof(uint32_t) * width * height * 4);
 
     out->cam = cam;
     out->sectors = sectors;
@@ -49,19 +43,11 @@ frame_t* frame_create(int width, int height, void* sectors, void* walls, camera_
 
 void frame_destroy(frame_t* fr) {
     if (!fr) return;
-    //if (fr->pixels) free(fr->pixels);
     if (fr->y_hi) free(fr->y_hi);
     if (fr->y_lo) free(fr->y_lo);
     free(fr);
 }
 
-
-void reset_stuff(frame_t* fr, uint32_t* pixels) {
-    memset(fr->y_hi, 0, fr->width * sizeof(int));
-    memset(fr->y_lo, 0, fr->width * sizeof(int));
-    memset(pixels, BLACK, sizeof(uint32_t) * fr->width * fr->height);
-    memset(fr->sectors->rendered, 0, sizeof(int) * fr->width);
-}
 
 void draw_line(frame_t* fr, uint32_t* pixels, int x, int top, int bottom, uint32_t color) {
     if (x < 0 || x >= SCREEN_WIDTH) return;
@@ -72,6 +58,15 @@ void draw_line(frame_t* fr, uint32_t* pixels, int x, int top, int bottom, uint32
     for (int y = top; y <= bottom; y++) { pixels[y * fr->width + x] = color; }
 }
 
+void draw_point(frame_t* fr, uint32_t* pixels, int x, int y, uint32_t color) {
+    for (int i = x-1; i <= x+1; i++) {
+        for (int j = y-1; j<=y+1; j++) {
+            pixels[j * SCREEN_WIDTH + i] = color;
+        }
+    }
+}
+
+
 static inline v2 wpos_to_cam(frame_t* fr, v2 p) {
     const v2 u = sub_vect( p, pcam->pos );
     return (v2) {
@@ -80,78 +75,41 @@ static inline v2 wpos_to_cam(frame_t* fr, v2 p) {
     };
 }
 
-void render_sector(frame_t* fr, uint32_t* pixels, int sect_id) {
-    if (sect_id < 0 || sect_id >= fr->sectors->n || fr->sectors->rendered[sect_id] == 1) return;
-    
+// i guess just figure the math out again, and do it correctly this time. 
+// dude idek what could be going wrong. this sucks.
+// idk what I have to do to fix this, but i should really do it. I can't do anything else until I do, lol. 
+void render_sector(frame_t* fr, uint32_t* pixels, int sect_id, int depth) {
+    if (sect_id < 0 || sect_id >= fr->sectors->n) return;
+    if (fr->sectors->rendered[sect_id] == 1) return;
+    if (depth >= 5) return;
+
     fr->sectors->rendered[sect_id] = 1;
     sector_t* sect = &fr->sectors->arr[sect_id];
 
-    struct { int arr[MAX_PORTALS]; int n; } portals;
-    portals.n = 0;
-    int hh = (SCREEN_HEIGHT/2), hw = (SCREEN_WIDTH/2);
-
-    float wz1_floor = pcam->zpos - sect->zfloor;
-    float wz1_ceil = pcam->zpos - sect->zceil;
-    float wz2_floor = pcam->zpos - sect->zfloor;
-    float wz2_ceil = pcam->zpos - sect->zceil;
-
-    v2 w1, w2;
+    //maybe make a stack/queue for next to render? yeah, def do that. it'll be easier than what I have
+    
     for (int i = sect->first_wall; i < sect->first_wall + sect->num_walls; i++) {
         wall_t* wall = &fr->walls->arr[i];
-        w1 = wpos_to_cam(fr, wall->p1);
-        w2 = wpos_to_cam(fr, wall->p2);
+        draw_point(fr, pixels, wall->p1.x, wall->p1.y, (sect_id) ? BLUE : RED);
+        draw_point(fr, pixels, wall->p2.x, wall->p2.y, (sect_id) ? BLUE : RED);
 
-        if (w1.y <= 0 || w2.y <= 0) continue;
 
-        float inv_wy1 = FOV_SCALE / w1.y;
-        float inv_wy2 = FOV_SCALE / w2.y;
-
-        //convert world x to screen x
-        w1.x = w1.x * inv_wy1 + hw;
-        w2.x = w2.x * inv_wy2 + hw;
-
-        //idk if these are right
-        if (w1.x > SCREEN_WIDTH && w2.x > SCREEN_WIDTH) continue;
-        if (w1.x < 0 && w2.x < 0) continue;
-
-        //convert world y to screen y
-        float wy1_bottom = wz1_floor * inv_wy1 + hh;
-        float wy2_bottom = wz2_floor * inv_wy2 + hh;
-        float wy1_top = wz1_ceil * inv_wy1 + hh;
-        float wy2_top = wz2_ceil * inv_wy2 + hh;
-
-        if (wall->portal == -1) {
-            v2 floor = normal_vect( ( (v2){w2.x - w1.x, wy2_bottom - wy1_bottom} ) );
-            v2 ceil = normal_vect( ( (v2){w2.x - w1.x, wy2_top - wy1_top} ) );
-
-            //scale for finding top and bottom coords of line
-            float scale_floor = (floor.y / floor.x);
-            float scale_ceil = (ceil.y / ceil.x);
-
-            for( int x = 0; x < w2.x - w1.x; x += 1 ) {
-                int x_val = w1.x + x;
-                int bottom = wy1_bottom + (scale_floor * x);
-                int top = wy1_top + (scale_ceil * x);
-
-                draw_line(fr, pixels, x_val, top, bottom, RED);
+        if (wall->portal != -1) {
+            if (fr->sectors->rendered[wall->portal] == 0) {
+                render_sector(fr, pixels, wall->portal, depth + 1);
             }
-        } else {
-            portals.arr[portals.n] = wall->portal;
-            portals.n++;
         }
     }
-
-    if (portals.n != 0) {
-        for (int i = 0; i < portals.n; i++) {
-            render_sector(fr, pixels, portals.arr[i]);
-        }
-    }
-
 }
 
 
 void render(frame_t* fr, uint32_t* pixels) {
-    reset_stuff(fr, pixels);
-    
-    render_sector(fr, pixels, fr->cam->sector);
+    //clears buffers & stuff for new frame
+    memset(fr->y_hi, 0, fr->width * sizeof(int));
+    memset(fr->y_lo, 0, fr->width * sizeof(int));
+    memset(pixels, BLACK, sizeof(uint32_t) * fr->width * fr->height);
+    memset(fr->sectors->rendered, 0, sizeof(int) * fr->width);
+
+    draw_point(fr, pixels, pcam->pos.x, pcam->pos.y, WHITE);
+    render_sector(fr, pixels, fr->cam->sector, 0);
 }

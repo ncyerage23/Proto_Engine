@@ -38,14 +38,17 @@ typedef struct {
     struct { wall_t* arr; int n; } *walls;
 } frame_t;
 
-//remember, should probably put threads and mutexes all up in here, since a bunch of vars are being shared. later tho.
+
 frame_t* frame_create(int width, int height, void* sectors, void* walls, camera_t* cam);
 void frame_destroy(frame_t* fr);
 
+
 void reset_stuff(frame_t* fr, uint32_t* pixels);
+
 void draw_line(frame_t* fr, uint32_t* pixels, int x, int top, int bottom, uint32_t color);
 static inline v2 wpos_to_cam(frame_t* fr, v2 p);
-void render_sector(frame_t* fr, uint32_t* pixels, int sect_id);
+
+void render_sector(frame_t* fr, uint32_t* pixels, int sect_id, int depth);
 void render(frame_t* fr, uint32_t* pixels);
 
 #endif
